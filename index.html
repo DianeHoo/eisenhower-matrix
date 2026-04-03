@@ -1,0 +1,2988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eisenhower Matrix — Personal Clarity Tool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ── Reset & Base ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+:root {
+  --canvas-bg: #fafaf5;
+  --card-bg: #ffffff;
+  --text: #2e342d;
+  --text-dim: rgba(46, 52, 45, 0.58);
+  --sage: #526347;
+  --sage-08: rgba(82, 99, 71, 0.08);
+  --sage-15: rgba(82, 99, 71, 0.15);
+  --sage-20: rgba(82, 99, 71, 0.20);
+  --sage-25: rgba(82, 99, 71, 0.25);
+  --sage-45: rgba(82, 99, 71, 0.55);
+  --sage-50: rgba(82, 99, 71, 0.60);
+  --sage-interactive: rgba(82, 99, 71, 0.82);
+  --sage-label: rgba(82, 99, 71, 0.68);
+  --card-shadow: 0 1px 4px rgba(46, 52, 45, 0.05);
+  --card-shadow-lift: 0 8px 24px rgba(46, 52, 45, 0.16);
+  --radius: 12px;
+  --font-display: 'Manrope', sans-serif;
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --summary-h: 64px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+html, body {
+  height: auto;
+  min-height: 100vh;
+  background: var(--canvas-bg);
+  color: var(--text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  overflow: auto;
+}
+
+/* ── Vertical flow container ── */
+.flow-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-type: y proximity;
+}
+
+/* ── Phase states ── */
+.phase {
+  position: relative;
+  overflow: hidden;
+  transition: max-height 500ms cubic-bezier(0.4, 0, 0.2, 1),
+              opacity 300ms ease,
+              padding 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  scroll-snap-align: start;
+}
+
+.phase-pending {
+  max-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  padding: 0;
+}
+
+.phase-active {
+  max-height: none;
+  opacity: 1;
+  pointer-events: all;
+}
+
+.phase-completed {
+  max-height: var(--summary-h);
+  opacity: 1;
+  pointer-events: all;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .phase {
+    transition: opacity 100ms ease;
+  }
+  .phase-pending { opacity: 0; max-height: 0; }
+  .phase-completed { max-height: var(--summary-h); }
+}
+
+/* ── Summary bar (completed phases) ── */
+.phase-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--summary-h);
+  padding: 0 24px;
+  background: var(--canvas-bg);
+  border-bottom: 1px solid var(--sage-08);
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--sage-label);
+  letter-spacing: 0.01em;
+  flex-shrink: 0;
+}
+
+.phase-summary .summary-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.phase-summary .summary-edit {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-45);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 150ms, background 150ms;
+  letter-spacing: 0.01em;
+}
+.phase-summary .summary-edit:hover {
+  color: var(--sage);
+  background: var(--sage-08);
+}
+.phase-summary .summary-edit:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 1: DUMP
+━━━━━━━━━━━━━━━━━━━━━━ */
+#phase-dump {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--canvas-bg);
+}
+
+#phase-dump.phase-active {
+  min-height: 100vh;
+  justify-content: center;
+}
+
+.dump-inner {
+  width: min(600px, 100% - 48px);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 60vh;
+  justify-content: center;
+}
+
+.dump-input-wrap {
+  position: relative;
+}
+
+#dump-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: none;
+  padding: 12px 0;
+  font-family: var(--font-body);
+  font-size: 24px;
+  color: var(--text);
+  outline: none;
+  caret-color: var(--sage);
+  transition: border-color 200ms;
+  text-align: center;
+}
+
+#dump-input:focus {
+  border-bottom-color: transparent;
+}
+
+#dump-input::placeholder {
+  color: rgba(46, 52, 45, 0.28);
+  font-style: normal;
+}
+
+/* Phase 4.4: animated underline expanding from center */
+.input-underline {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 2px;
+  background: var(--sage);
+  transition: width 500ms cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 0.3;
+  border-radius: 1px;
+}
+.dump-input-wrap:focus-within .input-underline {
+  width: 100%;
+}
+
+/* Phase 4.4: "Press enter to dump" hint */
+.dump-hint {
+  display: block;
+  text-align: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--sage-label);
+  opacity: 0;
+  transition: opacity 300ms ease;
+  padding-top: 8px;
+  pointer-events: none;
+}
+.dump-input-wrap:focus-within + .dump-hint,
+.dump-input-wrap:focus-within ~ .dump-hint {
+  opacity: 0.4;
+}
+
+.dump-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 16px;
+  max-height: calc(100vh - 260px);
+  overflow-y: auto;
+  padding-bottom: 2px;
+  scrollbar-width: none;
+}
+.dump-cards::-webkit-scrollbar { display: none; }
+
+.dump-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  opacity: 0;
+  transform: translateY(-8px);
+  animation: cardSlideIn 100ms ease-out forwards;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.dump-card .dump-delete {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--sage-25);
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 150ms ease, color 150ms ease;
+  font-family: var(--font-body);
+}
+.dump-card:hover .dump-delete,
+.dump-card:focus-within .dump-delete {
+  opacity: 1;
+}
+.dump-card .dump-delete:hover {
+  color: var(--sage);
+}
+.dump-card .dump-delete:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+  border-radius: 4px;
+  opacity: 1;
+}
+
+.dump-card.example-card {
+  opacity: 0.5;
+  border: 1px dashed var(--sage-15);
+  box-shadow: none;
+}
+.dump-card.example-card .dump-delete { display: none; }
+
+.dump-card .card-text-dump { flex: 1; }
+
+@keyframes cardSlideIn {
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dump-card {
+    animation: cardFadeIn 80ms ease forwards;
+    transform: none;
+  }
+  @keyframes cardFadeIn {
+    to { opacity: 1; }
+  }
+}
+
+.dump-footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 0 8px;
+  min-height: 48px;
+  align-items: center;
+}
+
+/* Phase 4.3: "suggest 8 tasks" button */
+#btn-suggest-tasks {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-45);
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 0.01em;
+  transition: color 150ms;
+}
+#btn-suggest-tasks:hover { color: var(--sage); }
+#btn-suggest-tasks:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+#btn-ready-sort {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 6px 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: color 150ms, opacity 150ms;
+  letter-spacing: 0.01em;
+}
+
+#btn-ready-sort.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#btn-ready-sort:hover { color: var(--sage); }
+
+#btn-ready-sort:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 2a: SORT URGENCY
+━━━━━━━━━━━━━━━━━━━━━━ */
+.sort-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--canvas-bg);
+}
+
+.sort-section.phase-active {
+  min-height: 100vh;
+}
+
+.sort-inner {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  overflow: hidden;
+  padding: 48px 0 24px;
+  min-height: 80vh;
+  justify-content: center;
+}
+
+.sort-progress {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--sage-interactive);
+  margin-bottom: 24px;
+  letter-spacing: 0.02em;
+}
+
+.sort-header {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+  line-height: 1.45;
+  margin-bottom: 28px;
+  white-space: pre-line;
+}
+
+/* Sort pass background tints */
+.sort-pass-urgency { background: rgba(180, 120, 60, 0.02); }
+.sort-pass-importance { background: rgba(82, 99, 71, 0.02); }
+
+/* Phase 1.1: NO left border accents — removed */
+
+.btn-back {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--sage-45);
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 150ms;
+  letter-spacing: 0.01em;
+}
+.btn-back:hover { color: var(--sage); }
+.btn-back:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+.sort-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+  position: relative;
+}
+.sort-list::-webkit-scrollbar { display: none; }
+
+.sort-card {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 10px 14px;
+  font-size: 13px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: box-shadow 150ms ease, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+}
+
+.sort-card:active { cursor: grabbing; }
+
+.sort-card.dragging {
+  box-shadow: var(--card-shadow-lift);
+  opacity: 0.96;
+  z-index: 100;
+  cursor: grabbing;
+  transition: box-shadow 150ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-card { transition: none; }
+}
+
+.sort-card .rank {
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sage-interactive);
+  min-width: 18px;
+  text-align: right;
+}
+
+.sort-card .handle {
+  color: var(--sage-25);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+}
+
+.sort-card .card-text {
+  flex: 1;
+}
+
+.sort-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 0 0;
+}
+
+.btn-sort-done {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 6px 0;
+  transition: color 150ms;
+  letter-spacing: 0.01em;
+}
+.btn-sort-done:hover { color: var(--sage); }
+.btn-sort-done:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ━━━━━━━━━━━━━━━━━━━━━━
+   PHASE 3: SCATTER
+━━━━━━━━━━━━━━━━━━━━━━ */
+#phase-scatter {
+  background: var(--canvas-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+#phase-scatter.phase-active {
+  min-height: 100vh;
+}
+
+.scatter-canvas {
+  position: relative;
+  flex: 1;
+  min-height: calc(100vh - 48px);
+  overflow: hidden;
+}
+
+/* SVG quadrant lines — Phase 1.2: stroke uses --sage-20 */
+.quadrant-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.q-line {
+  stroke: var(--sage-20);
+  stroke-width: 1;
+  fill: none;
+  stroke-dasharray: 1000;
+  stroke-dashoffset: 1000;
+}
+
+.q-line.drawn {
+  transition: stroke-dashoffset 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .q-line.drawn {
+    transition: none;
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Quadrant corner labels */
+.corner-label {
+  position: absolute;
+  font-family: var(--font-display);
+  color: var(--sage-label);
+  pointer-events: none;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.corner-label.now {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sage-interactive);
+  top: 12px;
+  right: 16px;
+}
+.corner-label.soon {
+  font-size: 9px;
+  top: 12px;
+  left: 16px;
+}
+.corner-label.quick {
+  font-size: 9px;
+  bottom: 38px;
+  right: 16px;
+}
+.corner-label.later {
+  font-size: 9px;
+  bottom: 38px;
+  left: 16px;
+}
+
+/* Axis labels */
+.axis-label {
+  position: absolute;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--sage-label);
+  pointer-events: none;
+}
+.axis-urgent {
+  bottom: 34px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.axis-important {
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%) rotate(-90deg);
+  transform-origin: center center;
+}
+
+/* Quadrant regions for accessibility */
+.quadrant-region {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Quadrant hints */
+.corner-hint {
+  position: absolute;
+  font-family: var(--font-body);
+  font-size: 8px;
+  color: rgba(46, 52, 45, 0.22);
+  pointer-events: none;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+.corner-hint.now { top: 25px; right: 16px; }
+.corner-hint.soon { top: 25px; left: 16px; }
+.corner-hint.quick { bottom: 26px; right: 16px; }
+.corner-hint.later { bottom: 26px; left: 16px; }
+
+/* Canvas cards */
+.canvas-card {
+  position: absolute;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 10px 14px;
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+  user-select: none;
+  touch-action: none;
+  white-space: normal;
+  word-break: break-word;
+  max-width: 200px;
+  transition: box-shadow 180ms ease, background 150ms ease;
+  z-index: 1;
+}
+
+@media (hover: hover) {
+  .canvas-card:hover {
+    background: rgba(250, 250, 245, 0.85);
+    box-shadow: 0 2px 8px rgba(46, 52, 45, 0.10);
+    cursor: grab;
+  }
+  .canvas-card:hover .drag-hint {
+    opacity: 1;
+  }
+}
+
+.drag-hint {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--sage-label);
+  opacity: 0;
+  transition: opacity 150ms ease;
+  pointer-events: none;
+  line-height: 1;
+  letter-spacing: 0.5px;
+}
+
+.canvas-card:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+}
+
+.canvas-card.grabbing {
+  box-shadow: var(--card-shadow-lift);
+  z-index: 100;
+  cursor: grabbing;
+}
+
+/* Drag tooltip */
+.drag-tooltip {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text);
+  color: #fff;
+  font-family: var(--font-body);
+  font-size: 10px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+  z-index: 200;
+}
+.drag-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 4px solid transparent;
+  border-top-color: var(--text);
+}
+
+/* Strikethrough overlay — sharpie-drawn SVG */
+.card-strike {
+  position: absolute;
+  top: 0;
+  left: 10px;
+  right: 10px;
+  bottom: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.card-strike svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.card-strike .strike-path {
+  stroke: #2e342d;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  fill: none;
+  transition: stroke-dashoffset 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.canvas-card.done .card-text {
+  opacity: 0.35;
+  transition: opacity 300ms ease;
+}
+
+.canvas-card:not(.done) .card-text {
+  opacity: 1;
+  transition: opacity 300ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-strike .strike-path {
+    transition: none;
+  }
+  .canvas-card.done .card-text {
+    opacity: 0.35;
+    transition: opacity 150ms ease;
+  }
+  .canvas-card.grabbing {
+    transition: box-shadow 90ms ease;
+  }
+}
+
+/* ── Phase 4.1: Timeline Scrubber — compact, bottom-right ── */
+.timeline-scrubber {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  width: 140px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  opacity: 0.4;
+  transition: opacity 200ms;
+  z-index: 40;
+}
+.timeline-scrubber:hover { opacity: 0.7; }
+
+.scrubber-label {
+  font-family: var(--font-display);
+  font-size: 7px;
+  color: var(--sage-45);
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+}
+
+.scrubber-track-wrap {
+  flex: 1;
+  position: relative;
+  height: 16px;
+  display: flex;
+  align-items: center;
+}
+
+.scrubber-track {
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--sage-08);
+  position: relative;
+}
+
+.scrubber-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 65%;
+  background: var(--sage-15);
+  border-radius: 1px;
+}
+
+.scrubber-handle {
+  position: absolute;
+  left: 65%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(46, 52, 45, 0.12), 0 0 0 1px var(--sage-15);
+  cursor: pointer;
+}
+.scrubber-handle::before {
+  content: '';
+  position: absolute;
+  inset: -17px;
+  border-radius: 50%;
+}
+
+.scrubber-handle:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+}
+
+/* ── Empty state ── */
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 200ms;
+}
+.empty-state.visible { opacity: 1; }
+.empty-state p {
+  font-family: var(--font-display);
+  font-size: 14px;
+  color: rgba(46, 52, 45, 0.3);
+  text-align: center;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* ── Start fresh ── */
+.start-fresh-wrap {
+  position: absolute;
+  bottom: 12px;
+  left: 16px;
+  z-index: 50;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+.start-fresh-wrap.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+#btn-start-fresh {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 0.02em;
+  transition: color 150ms, background 150ms;
+}
+#btn-start-fresh.confirming {
+  color: var(--sage);
+  background: var(--sage-08);
+  border-radius: 6px;
+  padding: 4px 8px;
+}
+#btn-start-fresh:hover { color: var(--sage); }
+#btn-start-fresh:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+
+/* ── Aria live region ── */
+#aria-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* ── Phase 4.2: add-on-canvas button — center-bottom ── */
+.canvas-add-wrap {
+  position: absolute;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+}
+.canvas-add-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: none;
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(46,52,45,0.12);
+  cursor: pointer;
+  font-size: 22px;
+  font-weight: 300;
+  line-height: 1;
+  color: var(--sage-45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  transition: box-shadow 150ms, color 150ms;
+}
+.canvas-add-btn:hover {
+  color: var(--sage);
+  box-shadow: 0 4px 12px rgba(46,52,45,0.18);
+}
+.canvas-add-btn:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+}
+
+.canvas-add-input-wrap {
+  position: absolute;
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 210;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow-lift);
+  padding: 8px 12px;
+  display: none;
+  width: 200px;
+}
+.canvas-add-input-wrap.visible { display: flex; }
+.canvas-add-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid var(--sage-15);
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text);
+  padding: 4px 0;
+  outline: none;
+  caret-color: var(--sage);
+}
+.canvas-add-input::placeholder {
+  color: rgba(46, 52, 45, 0.28);
+}
+.canvas-add-input:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ── Fake blinking cursor for hero input ── */
+.fake-cursor {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--sage);
+  opacity: 0.5;
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 300;
+  animation: blink 1.2s step-start infinite;
+  pointer-events: none;
+  line-height: 1;
+}
+
+.dump-input-wrap:focus-within .fake-cursor,
+.dump-input-wrap.has-value .fake-cursor {
+  display: none;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0; }
+}
+
+/* ── Focus ring ── */
+button:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* ── Fix 1: Guidance system ── */
+.dump-intro {
+  font-family: var(--font-display);
+  font-size: 13px;
+  color: var(--sage-label);
+  text-align: center;
+  margin-bottom: 24px;
+  line-height: 1.6;
+  transition: opacity 400ms ease;
+}
+#phase-dump.has-tasks .dump-intro {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Sort tips */
+.sort-tip {
+  text-align: center;
+  padding: 12px 0 4px;
+  min-height: 32px;
+}
+.sort-tip-text {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-45);
+  line-height: 1.5;
+}
+.sort-tip-next {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 10px;
+  color: var(--sage-45);
+  cursor: pointer;
+  padding: 2px 6px;
+  margin-left: 6px;
+  letter-spacing: 0.02em;
+  transition: color 150ms;
+}
+.sort-tip-next:hover { color: var(--sage); }
+
+/* Map guide */
+.map-guide-toggle {
+  position: absolute;
+  bottom: 34px;
+  left: 16px;
+  z-index: 50;
+  background: none;
+  border: none;
+  font-family: var(--font-display);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color 150ms;
+}
+.map-guide-toggle:hover { color: var(--sage); }
+.map-guide-content {
+  position: absolute;
+  bottom: 56px;
+  left: 16px;
+  z-index: 50;
+  background: var(--sage-08);
+  border-radius: var(--radius);
+  padding: 16px 20px;
+  max-width: 320px;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 300ms ease, opacity 200ms ease, padding 300ms ease;
+  pointer-events: none;
+}
+.map-guide-content.open {
+  max-height: 300px;
+  opacity: 1;
+  padding: 16px 20px;
+  pointer-events: all;
+}
+.map-guide-content p {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.6;
+  margin-bottom: 10px;
+}
+.map-guide-content p:last-of-type { margin-bottom: 12px; }
+.map-guide-close {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 2px 0;
+  transition: color 150ms;
+}
+.map-guide-close:hover { color: var(--sage); }
+
+/* ── Fix 7: Sort phase vertical centering ── */
+.sort-inner > .sort-progress,
+.sort-inner > .sort-header,
+.sort-inner > .sort-list,
+.sort-inner > .sort-tip,
+.sort-inner > .sort-footer {
+  width: min(520px, 100% - 48px);
+}
+.sort-footer {
+  padding: 16px 0 0;
+  margin-top: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<h1 class="sr-only">Your clarity map</h1>
+<div id="aria-live" aria-live="polite" aria-atomic="true"></div>
+
+<div class="flow-container">
+
+  <!-- ═══════════════════════════════════════
+       PHASE 1: DUMP
+  ═══════════════════════════════════════ -->
+  <section id="phase-dump" class="phase phase-active" aria-label="Brain dump — add everything on your mind">
+    <div class="phase-summary" id="dump-summary" style="display:none;" aria-hidden="true">
+      <span class="summary-text" id="dump-summary-text">0 tasks added</span>
+      <button class="summary-edit" id="dump-summary-edit" aria-label="Edit brain dump">edit</button>
+    </div>
+    <div class="dump-inner" id="dump-inner">
+      <h2 class="sr-only">Brain dump</h2>
+      <p class="dump-intro">Your head is full. That's why you're here.<br>
+Write out everything — don't sort yet, don't judge. Just get it out.</p>
+      <div class="dump-input-wrap">
+        <input
+          type="text"
+          id="dump-input"
+          placeholder="anything on your mind"
+          aria-label="Add a task"
+          autocomplete="off"
+          autocorrect="off"
+        >
+        <span class="fake-cursor" aria-hidden="true">|</span>
+        <div class="input-underline"></div>
+      </div>
+      <span class="dump-hint" id="dump-hint">Press enter to dump</span>
+      <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
+      <div class="dump-footer">
+        <button id="btn-suggest-tasks" aria-label="Suggest 8 example tasks">suggest 8 tasks</button>
+        <button id="btn-ready-sort" aria-label="Ready to sort your tasks">
+          ready to sort <span aria-hidden="true">&#8595;</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       PHASE 2a: SORT URGENCY
+  ═══════════════════════════════════════ -->
+  <section id="phase-sort-urgency" class="phase phase-pending sort-section sort-pass-urgency" aria-label="Sort tasks by urgency" aria-hidden="true">
+    <div class="phase-summary" id="urgency-summary" style="display:none;" aria-hidden="true">
+      <span class="summary-text">urgency ranked</span>
+      <button class="summary-edit" id="urgency-summary-edit" aria-label="Re-rank urgency">edit</button>
+    </div>
+    <div class="sort-inner" id="urgency-inner">
+      <div class="sort-progress" aria-live="polite">sorting urgency &#8212; 1 of 2</div>
+      <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#128293;</span> Drag to order by urgency.
+Most urgent at the top.</h2>
+      <div
+        id="sort-list-urgency"
+        class="sort-list"
+        role="list"
+        aria-label="Tasks to sort by urgency &#8212; drag to reorder"
+      ></div>
+      <div class="sort-tip" id="sort-tip-urgency" aria-live="polite">
+        <span class="sort-tip-text"></span>
+        <button class="sort-tip-next" aria-label="Next tip">next tip</button>
+      </div>
+      <div class="sort-footer">
+        <button class="btn-back" id="btn-urgency-back" aria-label="Go back to brain dump"><span aria-hidden="true">&#8593;</span> edit tasks</button>
+        <button class="btn-sort-done" id="btn-urgency-done" aria-label="Done sorting urgency">
+          done sorting <span aria-hidden="true">&#8595;</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       PHASE 2b: SORT IMPORTANCE
+  ═══════════════════════════════════════ -->
+  <section id="phase-sort-importance" class="phase phase-pending sort-section sort-pass-importance" aria-label="Sort tasks by importance" aria-hidden="true">
+    <div class="phase-summary" id="importance-summary" style="display:none;" aria-hidden="true">
+      <span class="summary-text">importance ranked</span>
+      <button class="summary-edit" id="importance-summary-edit" aria-label="Re-rank importance">edit</button>
+    </div>
+    <div class="sort-inner" id="importance-inner">
+      <div class="sort-progress" aria-live="polite">sorting importance &#8212; 2 of 2</div>
+      <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#127807;</span> Now order by importance.
+Most important at the top.</h2>
+      <div
+        id="sort-list-importance"
+        class="sort-list"
+        role="list"
+        aria-label="Tasks to sort by importance &#8212; drag to reorder"
+      ></div>
+      <div class="sort-tip" id="sort-tip-importance" aria-live="polite">
+        <span class="sort-tip-text"></span>
+        <button class="sort-tip-next" aria-label="Next tip">next tip</button>
+      </div>
+      <div class="sort-footer">
+        <button class="btn-back" id="btn-importance-back" aria-label="Go back to urgency sorting"><span aria-hidden="true">&#8593;</span> re-rank urgency</button>
+        <button class="btn-sort-done" id="btn-importance-done" aria-label="Done sorting importance">
+          done sorting <span aria-hidden="true">&#8595;</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       PHASE 3: SCATTER
+  ═══════════════════════════════════════ -->
+  <section id="phase-scatter" class="phase phase-pending" aria-label="Your tasks on the map" aria-hidden="true">
+    <h2 class="sr-only">Your map</h2>
+    <div class="scatter-canvas" id="scatter-canvas">
+      <svg class="quadrant-svg" id="quadrant-svg" aria-hidden="true">
+        <line id="vline-up" class="q-line" x1="50%" y1="50%" x2="50%" y2="0%"/>
+        <line id="vline-down" class="q-line" x1="50%" y1="50%" x2="50%" y2="100%"/>
+        <line id="hline-left" class="q-line" x1="50%" y1="50%" x2="0%" y2="50%"/>
+        <line id="hline-right" class="q-line" x1="50%" y1="50%" x2="100%" y2="50%"/>
+      </svg>
+
+      <div class="quadrant-region" id="q-now" style="top:0;right:0;width:50%;height:50%;" role="region" aria-label="Now — urgent and important"></div>
+      <div class="quadrant-region" id="q-soon" style="top:0;left:0;width:50%;height:50%;" role="region" aria-label="Soon — important, not urgent"></div>
+      <div class="quadrant-region" id="q-quick" style="bottom:0;right:0;width:50%;height:50%;" role="region" aria-label="Quick — urgent, not important"></div>
+      <div class="quadrant-region" id="q-later" style="bottom:0;left:0;width:50%;height:50%;" role="region" aria-label="Later — not urgent, not important"></div>
+
+      <span class="corner-label now" aria-hidden="true">Now</span>
+      <span class="corner-label soon" aria-hidden="true">Soon</span>
+      <span class="corner-label quick" aria-hidden="true">Quick</span>
+      <span class="corner-label later" aria-hidden="true">Later</span>
+
+      <span class="corner-hint now" aria-hidden="true">crises &amp; deadlines</span>
+      <span class="corner-hint soon" aria-hidden="true">plan &amp; schedule</span>
+      <span class="corner-hint quick" aria-hidden="true">do fast, don't overthink</span>
+      <span class="corner-hint later" aria-hidden="true">reconsider or let go</span>
+
+      <span class="axis-label axis-urgent" aria-hidden="true">urgent &#8594;</span>
+      <span class="axis-label axis-important" aria-hidden="true">important &#8594;</span>
+
+      <div class="empty-state" id="empty-state">
+        <p>Nothing here yet.
+Start by adding what's on your mind.</p>
+      </div>
+
+      <div class="canvas-add-wrap" id="canvas-add-wrap">
+        <div class="canvas-add-input-wrap" id="canvas-add-input-wrap">
+          <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
+        </div>
+        <button class="canvas-add-btn" id="canvas-add-btn" aria-label="Add new task to the map">+</button>
+      </div>
+
+      <!-- Map guide -->
+      <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
+      <div class="map-guide-content" id="map-guide-content">
+        <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
+        <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
+        <button class="map-guide-close" id="map-guide-close">got it</button>
+      </div>
+
+      <!-- Phase 4.1: timeline scrubber inside canvas, bottom-right -->
+      <div class="timeline-scrubber" role="group" aria-label="Timeline history">
+        <span class="scrubber-label">Mar 20</span>
+        <div class="scrubber-track-wrap">
+          <div class="scrubber-track">
+            <div class="scrubber-fill"></div>
+          </div>
+          <div
+            class="scrubber-handle"
+            aria-hidden="true"
+          ></div>
+        </div>
+        <span class="scrubber-label">Today</span>
+      </div>
+
+      <!-- Start fresh inside scatter canvas -->
+      <div class="start-fresh-wrap" id="start-fresh-wrap">
+        <button id="btn-start-fresh" aria-label="Start fresh">start fresh</button>
+      </div>
+    </div>
+  </section>
+
+</div><!-- .flow-container -->
+
+<script>
+// ──────────────────────────────────────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────────────────────────────────────
+
+const SAMPLE_TASKS = [
+  { text: "Finish quarterly report", urgency: 1, importance: 1 },  // Now (top-right)
+  { text: "Call back Dr. Chen", urgency: 2, importance: 2 },       // Now-ish
+  { text: "Start exercise routine", urgency: 7, importance: 1 },   // Soon (top-left) — NOT urgent but important
+  { text: "Research school options", urgency: 8, importance: 3 },   // Soon
+  { text: "Reply to group chat", urgency: 1, importance: 7 },      // Quick (bottom-right) — urgent but NOT important
+  { text: "Return Amazon package", urgency: 3, importance: 8 },    // Quick
+  { text: "Reorganize bookshelf", urgency: 6, importance: 6 },     // Later (bottom-left)
+  { text: "Fix printer settings", urgency: 5, importance: 5 },     // Center
+];
+
+let state = {
+  tasks: [],
+  urgencyOrder: [],
+  importanceOrder: [],
+  phase: 'dump',     // 'dump' | 'sort-urgency' | 'sort-importance' | 'scatter'
+  cardPositions: {},
+  done: new Set(),
+};
+
+let idCounter = 0;
+const makeId = () => `t${++idCounter}`;
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Utility
+// ──────────────────────────────────────────────────────────────────────────────
+
+function prefersReducedMotion() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+
+function announce(msg) {
+  const el = document.getElementById('aria-live');
+  el.textContent = '';
+  requestAnimationFrame(() => { el.textContent = msg; });
+}
+
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.appendChild(document.createTextNode(str));
+  return d.innerHTML;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Phase transitions — vertical flow
+// ──────────────────────────────────────────────────────────────────────────────
+
+const PHASE_ORDER = ['dump', 'sort-urgency', 'sort-importance', 'scatter'];
+const PHASE_IDS = {
+  'dump': 'phase-dump',
+  'sort-urgency': 'phase-sort-urgency',
+  'sort-importance': 'phase-sort-importance',
+  'scatter': 'phase-scatter',
+};
+
+function showPhase(targetPhase) {
+  const rm = prefersReducedMotion();
+  const targetIdx = PHASE_ORDER.indexOf(targetPhase);
+
+  PHASE_ORDER.forEach((phase, idx) => {
+    const el = document.getElementById(PHASE_IDS[phase]);
+    const inner = el.querySelector('.sort-inner, .dump-inner, .scatter-canvas');
+    const summary = el.querySelector('.phase-summary');
+
+    el.classList.remove('phase-pending', 'phase-active', 'phase-completed');
+
+    if (idx < targetIdx) {
+      // Completed — compress to summary bar
+      compressPhase(el, summary, inner, rm);
+    } else if (idx === targetIdx) {
+      // Active — expand
+      expandPhase(el, summary, inner, rm);
+    } else {
+      // Pending — collapse
+      el.classList.add('phase-pending');
+      el.setAttribute('aria-hidden', 'true');
+      if (summary) { summary.style.display = 'none'; summary.setAttribute('aria-hidden', 'true'); }
+      if (inner) inner.style.display = '';
+    }
+  });
+
+  state.phase = targetPhase;
+
+  // Show start-fresh only on scatter
+  const sfWrap = document.getElementById('start-fresh-wrap');
+  if (sfWrap) sfWrap.classList.toggle('visible', targetPhase === 'scatter');
+
+  // Scroll to active phase
+  requestAnimationFrame(() => {
+    const activeEl = document.getElementById(PHASE_IDS[targetPhase]);
+    if (activeEl) {
+      activeEl.scrollIntoView({ behavior: rm ? 'auto' : 'smooth', block: 'start' });
+    }
+  });
+}
+
+function compressPhase(el, summary, inner, rm) {
+  // Update summary text
+  updateSummaryText(el.id);
+
+  if (summary) {
+    summary.style.display = '';
+    summary.removeAttribute('aria-hidden');
+  }
+  if (inner) inner.style.display = 'none';
+
+  // Animate compression
+  const scrollH = el.scrollHeight;
+  if (!rm && scrollH > 64) {
+    el.style.maxHeight = scrollH + 'px';
+    el.offsetHeight; // force reflow
+    el.classList.add('phase-completed');
+  } else {
+    el.classList.add('phase-completed');
+  }
+
+  el.removeAttribute('aria-hidden');
+}
+
+function expandPhase(el, summary, inner, rm) {
+  if (summary) { summary.style.display = 'none'; summary.setAttribute('aria-hidden', 'true'); }
+  if (inner) inner.style.display = '';
+
+  if (!rm) {
+    // Animate from current height to full
+    el.classList.add('phase-active');
+    el.style.maxHeight = 'none';
+  } else {
+    el.classList.add('phase-active');
+    el.style.maxHeight = 'none';
+  }
+
+  el.removeAttribute('aria-hidden');
+}
+
+function updateSummaryText(elId) {
+  if (elId === 'phase-dump') {
+    const txt = document.getElementById('dump-summary-text');
+    if (txt) txt.textContent = `${state.tasks.length} task${state.tasks.length !== 1 ? 's' : ''} added`;
+  }
+  // Urgency and importance summaries have static text
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Phase 1: DUMP
+// ──────────────────────────────────────────────────────────────────────────────
+
+function initDump() {
+  const input = document.getElementById('dump-input');
+  const btnSort = document.getElementById('btn-ready-sort');
+  const btnSuggest = document.getElementById('btn-suggest-tasks');
+
+  renderDumpCards();
+  updateSortButton();
+  // Fix 1: toggle has-tasks on dump phase for intro fade
+  document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
+  // Fix 5: position fake cursor
+  document.fonts.ready.then(() => positionFakeCursor());
+  window.addEventListener('resize', positionFakeCursor);
+
+  // Toggle .has-value class on wrapper for fake cursor visibility
+  input.addEventListener('input', () => {
+    input.parentElement.classList.toggle('has-value', input.value.length > 0);
+  });
+
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const text = input.value.trim();
+      if (text) {
+        addTask(text, true);
+        input.value = '';
+        updateSortButton();
+        saveState();
+      }
+      e.preventDefault();
+    }
+  });
+
+  // Phase 4.3: "suggest 8 tasks" button
+  if (btnSuggest) {
+    btnSuggest.addEventListener('click', () => {
+      const sampleIds = [];
+      SAMPLE_TASKS.forEach(sample => {
+        const task = { id: makeId(), text: sample.text };
+        state.tasks.unshift(task);
+        sampleIds.push({ id: task.id, text: sample.text, urgency: sample.urgency, importance: sample.importance });
+      });
+      // Set urgencyOrder: sort by urgency value ascending (most urgent first = lowest number)
+      state.urgencyOrder = [...state.tasks].sort((a, b) => {
+        const sa = SAMPLE_TASKS.find(s => s.text === a.text);
+        const sb = SAMPLE_TASKS.find(s => s.text === b.text);
+        return (sa?.urgency || 99) - (sb?.urgency || 99);
+      }).map(t => t.id);
+      // Set importanceOrder: sort by importance value ascending (most important first = lowest number)
+      state.importanceOrder = [...state.tasks].sort((a, b) => {
+        const sa = SAMPLE_TASKS.find(s => s.text === a.text);
+        const sb = SAMPLE_TASKS.find(s => s.text === b.text);
+        return (sa?.importance || 99) - (sb?.importance || 99);
+      }).map(t => t.id);
+      renderDumpCards();
+      updateSortButton();
+      // Add has-tasks class for dump intro fade
+      document.getElementById('phase-dump').classList.add('has-tasks');
+      btnSuggest.style.opacity = '0';
+      btnSuggest.style.pointerEvents = 'none';
+      saveState();
+      announce('8 tasks added. Drag to reorder or add your own.');
+    });
+  }
+
+  btnSort.addEventListener('click', () => {
+    if (state.tasks.length === 0) return;
+    transitionToSortUrgency();
+  });
+  btnSort.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (state.tasks.length > 0) transitionToSortUrgency();
+    }
+  });
+
+  // Summary bar edit button
+  const dumpEditBtn = document.getElementById('dump-summary-edit');
+  if (dumpEditBtn) {
+    dumpEditBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      showPhase('dump');
+      renderDumpCards();
+      updateSortButton();
+      document.getElementById('dump-input').focus();
+      announce('Editing brain dump.');
+      saveState();
+    });
+  }
+}
+
+function addTask(text, animate) {
+  const task = { id: makeId(), text };
+  state.tasks.unshift(task);
+  // Fix 1: fade out dump intro when tasks exist
+  document.getElementById('phase-dump').classList.add('has-tasks');
+  if (!animate) return;
+  const cardsEl = document.getElementById('dump-cards');
+  const card = createDumpCard(task);
+  cardsEl.prepend(card);
+  // Hide suggest button once user starts typing
+  const suggestBtn = document.getElementById('btn-suggest-tasks');
+  if (suggestBtn && state.tasks.length > 0) {
+    suggestBtn.style.opacity = '0';
+    suggestBtn.style.pointerEvents = 'none';
+  }
+  card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+}
+
+function createDumpCard(task) {
+  const card = document.createElement('div');
+  card.className = 'dump-card';
+  card.setAttribute('role', 'listitem');
+  card.dataset.id = task.id;
+  card.innerHTML = `<span class="card-text-dump">${escapeHtml(task.text)}</span>`;
+  const delBtn = document.createElement('button');
+  delBtn.className = 'dump-delete';
+  delBtn.setAttribute('aria-label', `Remove ${task.text}`);
+  delBtn.textContent = '\u00d7';
+  delBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    deleteDumpTask(task.id);
+  });
+  card.appendChild(delBtn);
+  return card;
+}
+
+function deleteDumpTask(id) {
+  state.tasks = state.tasks.filter(t => t.id !== id);
+  const card = document.querySelector(`.dump-card[data-id="${id}"]`);
+  if (card) {
+    card.style.transition = 'opacity 150ms ease, transform 150ms ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(8px)';
+    setTimeout(() => card.remove(), 160);
+  }
+  // Fix 1: toggle has-tasks class
+  document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
+  updateSortButton();
+  saveState();
+}
+
+function renderDumpCards() {
+  const cardsEl = document.getElementById('dump-cards');
+  cardsEl.innerHTML = '';
+  state.tasks.forEach(task => {
+    const card = createDumpCard(task);
+    cardsEl.appendChild(card);
+  });
+  updateSortButton();
+}
+
+function updateSortButton() {
+  const btn = document.getElementById('btn-ready-sort');
+  btn.classList.toggle('visible', state.tasks.length > 0);
+}
+
+function transitionToSortUrgency() {
+  // Preserve existing order if it has all task IDs (e.g. from sample tasks)
+  const taskIds = new Set(state.tasks.map(t => t.id));
+  const urgencyValid = state.urgencyOrder.length === state.tasks.length &&
+    state.urgencyOrder.every(id => taskIds.has(id));
+  if (!urgencyValid) {
+    state.urgencyOrder = state.tasks.map(t => t.id);
+  }
+  const importanceValid = state.importanceOrder.length === state.tasks.length &&
+    state.importanceOrder.every(id => taskIds.has(id));
+  if (!importanceValid) {
+    state.importanceOrder = [...state.urgencyOrder];
+  }
+  renderSortList('urgency');
+  showPhase('sort-urgency');
+  saveState();
+  announce('Sorting phase. Drag tasks to order by urgency. Most urgent at the top.');
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Phase 2: SORT — FLIP-based drag to reorder
+// ──────────────────────────────────────────────────────────────────────────────
+
+let dragState = null;
+
+function renderSortList(pass) {
+  const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
+  const listEl = document.getElementById(listId);
+  const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
+
+  listEl.innerHTML = '';
+  order.forEach((id, idx) => {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return;
+
+    const card = document.createElement('div');
+    card.className = 'sort-card';
+    card.setAttribute('draggable', 'false');
+    card.dataset.id = id;
+    card.setAttribute('role', 'listitem');
+    card.setAttribute('aria-label', `${task.text}, position ${idx + 1} of ${order.length}`);
+    card.tabIndex = 0;
+
+    card.innerHTML = `
+      <span class="rank" aria-hidden="true">${idx + 1}</span>
+      <span class="card-text">${escapeHtml(task.text)}</span>
+      <span class="handle" aria-hidden="true">\u2807</span>
+    `;
+
+    card.addEventListener('pointerdown', (e) => onSortPointerDown(e, pass));
+    card.addEventListener('keydown', e => onSortKeyDown(e, id, pass));
+
+    listEl.appendChild(card);
+  });
+}
+
+function onSortPointerDown(e, pass) {
+  if (e.button !== 0 && e.pointerType !== 'touch') return;
+  const card = e.currentTarget;
+  const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
+  const listEl = document.getElementById(listId);
+  const cardRect = card.getBoundingClientRect();
+  const allCards = Array.from(listEl.querySelectorAll('.sort-card'));
+  const dragIdx = allCards.indexOf(card);
+
+  // Capture initial rects for all cards (FLIP: First)
+  const initialRects = new Map();
+  allCards.forEach(c => {
+    initialRects.set(c, c.getBoundingClientRect());
+  });
+
+  // Lock body scroll during drag
+  document.body.style.overflow = 'hidden';
+
+  dragState = {
+    card,
+    pass,
+    listId,
+    pointerId: e.pointerId,
+    startY: e.clientY,
+    cardOffsetY: e.clientY - cardRect.top,
+    originalIndex: dragIdx,
+    currentIndex: dragIdx,
+    initialRects,
+    cardHeight: cardRect.height,
+    gap: 6, // matches CSS gap
+  };
+
+  // Position card as dragging (fixed overlay)
+  card.classList.add('dragging');
+  card.style.position = 'fixed';
+  card.style.width = cardRect.width + 'px';
+  card.style.left = cardRect.left + 'px';
+  card.style.top = cardRect.top + 'px';
+  card.style.zIndex = '1000';
+  card.style.pointerEvents = 'none';
+
+  // Set all other cards to their natural positions but with transforms
+  allCards.forEach((c, i) => {
+    if (c === card) return;
+    c.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)';
+  });
+
+  document.addEventListener('pointermove', onSortPointerMove);
+  document.addEventListener('pointerup', onSortPointerUp);
+  document.addEventListener('pointercancel', onSortPointerUp);
+}
+
+function onSortPointerMove(e) {
+  if (!dragState) return;
+  const { card, cardOffsetY, listId, originalIndex, cardHeight, gap } = dragState;
+  const newTop = e.clientY - cardOffsetY;
+  card.style.top = newTop + 'px';
+
+  // Calculate which index the dragged card would occupy
+  const listEl = document.getElementById(listId);
+  const siblings = Array.from(listEl.querySelectorAll('.sort-card:not(.dragging)'));
+  let targetIndex = siblings.length;
+
+  for (let i = 0; i < siblings.length; i++) {
+    const rect = siblings[i].getBoundingClientRect();
+    // Account for any existing transform
+    const midpoint = rect.top + rect.height / 2;
+    if (e.clientY < midpoint) {
+      targetIndex = i;
+      break;
+    }
+  }
+
+  // Adjust for the dragged card's original position
+  // Siblings array doesn't include the dragged card, so indices shift
+  if (targetIndex > originalIndex) {
+    // targetIndex in siblings maps to targetIndex+1 in full list (since dragged card is removed)
+  }
+
+  dragState.currentIndex = targetIndex >= originalIndex ? targetIndex + 1 : targetIndex;
+
+  // Apply translateY to displaced cards
+  siblings.forEach((c, sibIdx) => {
+    const fullIdx = sibIdx >= originalIndex ? sibIdx + 1 : sibIdx;
+    let shift = 0;
+
+    if (dragState.currentIndex <= originalIndex) {
+      // Dragged upward: cards between target and original shift down
+      if (fullIdx >= dragState.currentIndex && fullIdx < originalIndex) {
+        shift = cardHeight + gap;
+      }
+    } else {
+      // Dragged downward: cards between original and target shift up
+      if (fullIdx > originalIndex && fullIdx < dragState.currentIndex) {
+        shift = -(cardHeight + gap);
+      }
+    }
+
+    c.style.transform = shift !== 0 ? `translateY(${shift}px)` : '';
+  });
+}
+
+function onSortPointerUp(e) {
+  if (!dragState) return;
+  const { card, pass, listId, originalIndex, currentIndex } = dragState;
+
+  // Restore body scroll
+  document.body.style.overflow = '';
+
+  // Clean up dragged card styles
+  card.classList.remove('dragging');
+  card.style.position = '';
+  card.style.width = '';
+  card.style.left = '';
+  card.style.top = '';
+  card.style.zIndex = '';
+  card.style.pointerEvents = '';
+
+  const listEl = document.getElementById(listId);
+
+  // Clear transforms on all cards
+  const allCards = Array.from(listEl.querySelectorAll('.sort-card'));
+  allCards.forEach(c => {
+    c.style.transform = '';
+    c.style.transition = '';
+  });
+
+  // Perform DOM reorder
+  const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
+  const finalIdx = Math.max(0, Math.min(order.length - 1, currentIndex > originalIndex ? currentIndex - 1 : currentIndex));
+
+  if (finalIdx !== originalIndex) {
+    const [moved] = order.splice(originalIndex, 1);
+    order.splice(finalIdx, 0, moved);
+    if (pass === 'urgency') state.urgencyOrder = order;
+    else state.importanceOrder = order;
+  }
+
+  // Re-render with FLIP animation
+  const oldRects = new Map();
+  allCards.forEach(c => {
+    oldRects.set(c.dataset.id, c.getBoundingClientRect());
+  });
+
+  renderSortList(pass);
+
+  // FLIP: animate from old positions to new
+  if (!prefersReducedMotion()) {
+    const newCards = Array.from(listEl.querySelectorAll('.sort-card'));
+    newCards.forEach(c => {
+      const oldRect = oldRects.get(c.dataset.id);
+      if (!oldRect) return;
+      const newRect = c.getBoundingClientRect();
+      const dx = oldRect.left - newRect.left;
+      const dy = oldRect.top - newRect.top;
+      if (Math.abs(dy) > 1 || Math.abs(dx) > 1) {
+        c.style.transform = `translate(${dx}px, ${dy}px)`;
+        c.offsetHeight; // force reflow
+        c.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)';
+        c.style.transform = '';
+        c.addEventListener('transitionend', function cleanup() {
+          c.style.transition = '';
+          c.removeEventListener('transitionend', cleanup);
+        });
+      }
+    });
+  }
+
+  document.removeEventListener('pointermove', onSortPointerMove);
+  document.removeEventListener('pointerup', onSortPointerUp);
+  document.removeEventListener('pointercancel', onSortPointerUp);
+
+  dragState = null;
+  saveState();
+}
+
+function onSortKeyDown(e, id, pass) {
+  const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
+  const idx = order.indexOf(id);
+  const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
+
+  if (e.key === 'ArrowUp' && idx > 0) {
+    e.preventDefault();
+    order.splice(idx, 1);
+    order.splice(idx - 1, 0, id);
+    if (pass === 'urgency') state.urgencyOrder = order;
+    else state.importanceOrder = order;
+    renderSortList(pass);
+    const cards = document.querySelectorAll(`#${listId} .sort-card`);
+    cards[idx - 1]?.focus();
+    announce(`Moved to position ${idx}`);
+    saveState();
+  } else if (e.key === 'ArrowDown' && idx < order.length - 1) {
+    e.preventDefault();
+    order.splice(idx, 1);
+    order.splice(idx + 1, 0, id);
+    if (pass === 'urgency') state.urgencyOrder = order;
+    else state.importanceOrder = order;
+    renderSortList(pass);
+    const cards = document.querySelectorAll(`#${listId} .sort-card`);
+    cards[idx + 1]?.focus();
+    announce(`Moved to position ${idx + 2}`);
+    saveState();
+  }
+}
+
+function initSort() {
+  // Urgency done
+  const btnUrgencyDone = document.getElementById('btn-urgency-done');
+  btnUrgencyDone.addEventListener('click', onUrgencyDone);
+  btnUrgencyDone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUrgencyDone(); }
+  });
+
+  // Urgency back
+  const btnUrgencyBack = document.getElementById('btn-urgency-back');
+  btnUrgencyBack.addEventListener('click', () => {
+    showPhase('dump');
+    renderDumpCards();
+    updateSortButton();
+    document.getElementById('dump-input').focus();
+    announce('Back to brain dump. Your tasks are preserved.');
+    saveState();
+  });
+  btnUrgencyBack.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      btnUrgencyBack.click();
+    }
+  });
+
+  // Importance done
+  const btnImportanceDone = document.getElementById('btn-importance-done');
+  btnImportanceDone.addEventListener('click', onImportanceDone);
+  btnImportanceDone.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onImportanceDone(); }
+  });
+
+  // Importance back
+  const btnImportanceBack = document.getElementById('btn-importance-back');
+  btnImportanceBack.addEventListener('click', () => {
+    renderSortList('urgency');
+    showPhase('sort-urgency');
+    announce('Back to urgency sorting.');
+    saveState();
+  });
+  btnImportanceBack.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      btnImportanceBack.click();
+    }
+  });
+
+  // Summary bar edit buttons
+  const urgencyEditBtn = document.getElementById('urgency-summary-edit');
+  if (urgencyEditBtn) {
+    urgencyEditBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderSortList('urgency');
+      showPhase('sort-urgency');
+      announce('Re-ranking urgency.');
+      saveState();
+    });
+  }
+
+  const importanceEditBtn = document.getElementById('importance-summary-edit');
+  if (importanceEditBtn) {
+    importanceEditBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      renderSortList('importance');
+      showPhase('sort-importance');
+      announce('Re-ranking importance.');
+      saveState();
+    });
+  }
+}
+
+function onUrgencyDone() {
+  // Preserve existing importance order if it has all task IDs (e.g. from sample tasks)
+  const taskIds = new Set(state.tasks.map(t => t.id));
+  const importanceValid = state.importanceOrder.length === state.tasks.length &&
+    state.importanceOrder.every(id => taskIds.has(id));
+  if (!importanceValid) {
+    state.importanceOrder = [...state.urgencyOrder]; // carry over as starting order
+  }
+  renderSortList('importance');
+  showPhase('sort-importance');
+  saveState();
+  announce('Now sorting importance. Drag tasks to order by importance. Most important at the top.');
+}
+
+function onImportanceDone() {
+  triggerScatter();
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Phase 3: SCATTER — Position computation
+// ──────────────────────────────────────────────────────────────────────────────
+
+function computeCanvasPositions(canvasW, canvasH) {
+  const n = state.tasks.length;
+  if (n === 0) return {};
+
+  const EDGE_PAD = 32;
+  const MIN_GAP = 32;
+
+  const usableW = canvasW - EDGE_PAD * 2;
+  const usableH = canvasH - EDGE_PAD * 2;
+
+  const positions = {};
+
+  state.tasks.forEach(task => {
+    const urgencyRank = state.urgencyOrder.indexOf(task.id);
+    const importanceRank = state.importanceOrder.indexOf(task.id);
+
+    const urgencyNorm = n > 1 ? urgencyRank / (n - 1) : 0.5;
+    const importanceNorm = n > 1 ? importanceRank / (n - 1) : 0.5;
+
+    const x = EDGE_PAD + (1 - urgencyNorm) * usableW;
+    const y = EDGE_PAD + importanceNorm * usableH;
+
+    positions[task.id] = { x, y };
+  });
+
+  return forceNudge(positions, canvasW, canvasH, EDGE_PAD, MIN_GAP);
+}
+
+function forceNudge(positions, canvasW, canvasH, edgePad, minGap) {
+  const CARD_W = 140;
+  const CARD_H = 36;
+  const ITERATIONS = 40;
+
+  const ids = Object.keys(positions);
+  const pos = { ...positions };
+
+  for (let iter = 0; iter < ITERATIONS; iter++) {
+    let anyMoved = false;
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        const a = pos[ids[i]];
+        const b = pos[ids[j]];
+        const dx = b.x - a.x;
+        const dy = b.y - a.y;
+        const overlapX = CARD_W + minGap - Math.abs(dx);
+        const overlapY = CARD_H + minGap - Math.abs(dy);
+        if (overlapX > 0 && overlapY > 0) {
+          const pushX = overlapX / 2;
+          const pushY = overlapY / 2;
+          if (pushX < pushY) {
+            const dir = dx < 0 ? -1 : 1;
+            a.x -= dir * pushX * 0.5;
+            b.x += dir * pushX * 0.5;
+          } else {
+            const dir = dy < 0 ? -1 : 1;
+            a.y -= dir * pushY * 0.5;
+            b.y += dir * pushY * 0.5;
+          }
+          anyMoved = true;
+        }
+      }
+      pos[ids[i]].x = Math.max(edgePad, Math.min(canvasW - CARD_W - edgePad, pos[ids[i]].x));
+      pos[ids[i]].y = Math.max(edgePad, Math.min(canvasH - CARD_H - edgePad, pos[ids[i]].y));
+    }
+    if (!(iter % 10) && !anyMoved) break;
+  }
+
+  return pos;
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Scatter animation
+// ──────────────────────────────────────────────────────────────────────────────
+
+function triggerScatter() {
+  // Capture sort card positions before transition
+  const sortCards = document.querySelectorAll('#sort-list-importance .sort-card');
+  const sortRects = {};
+  sortCards.forEach(card => {
+    sortRects[card.dataset.id] = card.getBoundingClientRect();
+  });
+
+  const rm = prefersReducedMotion();
+
+  // Show scatter phase
+  showPhase('scatter');
+
+  // Wait for layout
+  requestAnimationFrame(() => {
+    const canvas = document.getElementById('scatter-canvas');
+    const canvasRect = canvas.getBoundingClientRect();
+    const canvasH = canvasRect.height;
+    const canvasW = canvasRect.width;
+
+    state.cardPositions = computeCanvasPositions(canvasW, canvasH);
+    buildCanvasCards(rm);
+
+    saveState();
+
+    requestAnimationFrame(() => {
+      drawQuadrantLines(rm);
+
+      setTimeout(() => {
+        animateCardsFlying(sortRects, rm);
+        setTimeout(() => {
+          announce('Tasks scattered on the map. Click any task to mark it done.');
+        }, rm ? 200 : 1400);
+      }, rm ? 0 : 300);
+    });
+  });
+}
+
+function buildCanvasCards(rm) {
+  const canvas = document.getElementById('scatter-canvas');
+  canvas.querySelectorAll('.canvas-card').forEach(c => c.remove());
+
+  let firstDragHintShown = false;
+
+  state.tasks.forEach(task => {
+    const pos = state.cardPositions[task.id];
+    if (!pos) return;
+
+    const card = document.createElement('div');
+    card.className = 'canvas-card' + (state.done.has(task.id) ? ' done' : '');
+    card.dataset.id = task.id;
+    card.tabIndex = 0;
+    card.setAttribute('role', 'button');
+    card.setAttribute('aria-pressed', state.done.has(task.id) ? 'true' : 'false');
+    card.setAttribute('aria-label', `${task.text}${state.done.has(task.id) ? ', done' : ''} — click to toggle done`);
+    card.style.left = pos.x + 'px';
+    card.style.top = pos.y + 'px';
+    card.style.opacity = '0';
+
+    const isFirstCard = !firstDragHintShown;
+
+    // Phase 1.3: SVG with viewBox, width/height attributes
+    card.innerHTML = `
+      <span class="card-text">${escapeHtml(task.text)}</span>
+      <div class="card-strike" aria-hidden="true">
+        <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
+      </div>
+      <span class="drag-hint" aria-hidden="true">\u2807</span>
+      ${isFirstCard ? '<span class="drag-tooltip" aria-hidden="true">hold to reposition</span>' : ''}
+    `;
+
+    // Phase 1.3: double-rAF for strike path
+    requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+
+    if (isFirstCard) {
+      firstDragHintShown = true;
+      const tooltip = card.querySelector('.drag-tooltip');
+      if (tooltip) {
+        card.addEventListener('mouseenter', function onFirstHover() {
+          tooltip.style.opacity = '1';
+          card.removeEventListener('mouseenter', onFirstHover);
+          card._hasDragTooltip = true;
+        }, { once: true });
+      }
+    }
+
+    setupLongPressDrag(card, task.id);
+    setupSwipeStrike(card, task.id);
+
+    card.addEventListener('click', (e) => {
+      if (card._suppressNextClick) {
+        card._suppressNextClick = false;
+        return;
+      }
+      onCanvasCardTap(card, task.id);
+    });
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onCanvasCardTap(card, task.id);
+      }
+      if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+        e.preventDefault();
+        const STEP = 20;
+        const canvasRect = canvas.getBoundingClientRect();
+        const EDGE = 24;
+        let x = parseFloat(card.style.left) || 0;
+        let y = parseFloat(card.style.top) || 0;
+        if (e.key === 'ArrowLeft')  x = Math.max(EDGE, x - STEP);
+        if (e.key === 'ArrowRight') x = Math.min(canvasRect.width - card.offsetWidth - EDGE, x + STEP);
+        if (e.key === 'ArrowUp')    y = Math.max(EDGE, y - STEP);
+        if (e.key === 'ArrowDown')  y = Math.min(canvasRect.height - card.offsetHeight - EDGE, y + STEP);
+        card.style.left = x + 'px';
+        card.style.top  = y + 'px';
+        state.cardPositions[task.id] = { x, y };
+        announce(`${task.text} moved to ${Math.round(x)}, ${Math.round(y)}`);
+      }
+    });
+
+    canvas.appendChild(card);
+  });
+}
+
+function drawQuadrantLines(rm) {
+  const lines = document.querySelectorAll('.q-line');
+  const canvas = document.getElementById('scatter-canvas');
+  const h = canvas.clientHeight;
+  const w = canvas.clientWidth;
+
+  const halfH = h / 2;
+  const halfW = w / 2;
+
+  // Phase 1.2: Set dasharray, then set dashoffset via inline style
+  document.getElementById('vline-up').style.strokeDasharray = halfH;
+  document.getElementById('vline-up').style.strokeDashoffset = halfH;
+  document.getElementById('vline-down').style.strokeDasharray = halfH;
+  document.getElementById('vline-down').style.strokeDashoffset = halfH;
+  document.getElementById('hline-left').style.strokeDasharray = halfW;
+  document.getElementById('hline-left').style.strokeDashoffset = halfW;
+  document.getElementById('hline-right').style.strokeDasharray = halfW;
+  document.getElementById('hline-right').style.strokeDashoffset = halfW;
+
+  requestAnimationFrame(() => {
+    // Phase 1.2: Clear inline strokeDashoffset before adding .drawn class
+    // so the CSS class value (0) takes effect via transition
+    lines.forEach(line => {
+      line.style.strokeDashoffset = '';
+      line.classList.add('drawn');
+    });
+  });
+}
+
+function animateCardsFlying(sortRects, rm) {
+  const canvas = document.getElementById('scatter-canvas');
+  const canvasRect = canvas.getBoundingClientRect();
+  const cards = canvas.querySelectorAll('.canvas-card');
+
+  if (rm) {
+    cards.forEach((card) => {
+      card.style.opacity = '1';
+    });
+    return;
+  }
+
+  cards.forEach((card, i) => {
+    const id = card.dataset.id;
+    const targetPos = state.cardPositions[id];
+    if (!targetPos) return;
+
+    const srcRect = sortRects[id];
+
+    card.style.left = targetPos.x + 'px';
+    card.style.top = targetPos.y + 'px';
+
+    let fromX = 0, fromY = 0;
+    if (srcRect) {
+      fromX = (srcRect.left - canvasRect.left) - targetPos.x;
+      fromY = (srcRect.top - canvasRect.top) - targetPos.y;
+    } else {
+      fromX = 0;
+      fromY = canvasRect.height * 0.15;
+    }
+
+    const midX = fromX * 0.65;
+    const midY = fromY * 0.65 - 12;
+
+    card.animate([
+      { transform: `translate(${fromX}px, ${fromY}px)`, opacity: 0.85 },
+      { transform: `translate(${midX}px, ${midY}px)`,   opacity: 0.9  },
+      { transform: `translate(0px, 0px)`,                opacity: 1    }
+    ], {
+      duration: 420,
+      easing: 'cubic-bezier(0.25, 0.1, 0.15, 1.0)',
+      fill: 'both',
+      delay: i * 30
+    });
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Canvas card interactions
+// ──────────────────────────────────────────────────────────────────────────────
+
+function onCanvasCardTap(card, id) {
+  const isDone = state.done.has(id);
+  const text = getTaskText(id);
+  const strikePath = card.querySelector('.strike-path');
+  if (isDone) {
+    state.done.delete(id);
+    card.classList.remove('done');
+    card.setAttribute('aria-pressed', 'false');
+    card.setAttribute('aria-label', `${text} — click to toggle done`);
+    // Set inline strokeDashoffset to full length (hidden)
+    if (strikePath) {
+      const len = parseFloat(strikePath.style.strokeDasharray) || 500;
+      strikePath.style.strokeDashoffset = len + '';
+    }
+    announce(`${text} — unmarked`);
+  } else {
+    state.done.add(id);
+    card.classList.add('done');
+    card.setAttribute('aria-pressed', 'true');
+    card.setAttribute('aria-label', `${text}, done — click to toggle done`);
+    // Set inline strokeDashoffset to 0 (visible)
+    if (strikePath) {
+      strikePath.style.strokeDashoffset = '0';
+    }
+    announce(`${text} — done`);
+  }
+  saveState();
+}
+
+function setupSwipeStrike(card, id) {
+  let swipeStart = null;
+  let isHorizSwipe = null;
+
+  card.addEventListener('touchstart', (e) => {
+    if (card._suppressNextClick) return;
+    const t = e.touches[0];
+    swipeStart = { x: t.clientX, y: t.clientY };
+    isHorizSwipe = null;
+  }, { passive: true });
+
+  card.addEventListener('touchmove', (e) => {
+    if (!swipeStart) return;
+    const t = e.touches[0];
+    const dx = t.clientX - swipeStart.x;
+    const dy = t.clientY - swipeStart.y;
+
+    if (isHorizSwipe === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
+      isHorizSwipe = Math.abs(dx) > Math.abs(dy);
+    }
+
+    if (!isHorizSwipe) return;
+
+    e.preventDefault();
+
+    const cardW = card.offsetWidth - 28;
+    const progress = Math.min(1, Math.max(0, Math.abs(dx) / cardW));
+    const strikePath = card.querySelector('.strike-path');
+    if (strikePath) {
+      const len = parseFloat(strikePath.style.strokeDasharray) || strikePath.getTotalLength() || 200;
+      strikePath.style.transition = 'none';
+      strikePath.style.strokeDashoffset = (len * (1 - progress)) + '';
+    }
+    const textEl = card.querySelector('.card-text');
+    if (textEl) {
+      textEl.style.transition = 'none';
+      textEl.style.opacity = String(1 - progress * 0.65);
+    }
+  }, { passive: false });
+
+  card.addEventListener('touchend', (e) => {
+    if (!swipeStart || !isHorizSwipe) {
+      swipeStart = null;
+      isHorizSwipe = null;
+      return;
+    }
+
+    const t = e.changedTouches[0];
+    const dx = t.clientX - swipeStart.x;
+    const cardW = card.offsetWidth - 28;
+    const progress = Math.abs(dx) / cardW;
+
+    const strikePath = card.querySelector('.strike-path');
+    const textEl = card.querySelector('.card-text');
+
+    if (progress >= 0.6) {
+      if (strikePath) { strikePath.style.transition = ''; strikePath.style.strokeDashoffset = '0'; }
+      if (textEl) { textEl.style.transition = ''; textEl.style.opacity = ''; }
+      if (!state.done.has(id)) {
+        card.classList.add('done');
+        card._suppressNextClick = true;
+        setTimeout(() => { card._suppressNextClick = false; }, 300);
+        state.done.add(id);
+        card.setAttribute('aria-pressed', 'true');
+        card.setAttribute('aria-label', `${getTaskText(id)}, done — click to toggle done`);
+        announce(`${getTaskText(id)} — done`);
+        saveState();
+      }
+    } else {
+      if (strikePath) {
+        const len = parseFloat(strikePath.style.strokeDasharray) || strikePath.getTotalLength() || 200;
+        strikePath.style.transition = 'stroke-dashoffset 200ms cubic-bezier(0.4, 0, 0.2, 1)';
+        strikePath.style.strokeDashoffset = len + '';
+        setTimeout(() => { if (strikePath) { strikePath.style.transition = ''; } }, 210);
+      }
+      if (textEl) {
+        textEl.style.transition = 'opacity 200ms ease';
+        textEl.style.opacity = '';
+        setTimeout(() => { if (textEl) { textEl.style.transition = ''; } }, 210);
+      }
+    }
+
+    swipeStart = null;
+    isHorizSwipe = null;
+  }, { passive: true });
+}
+
+function getTaskText(id) {
+  return state.tasks.find(t => t.id === id)?.text || '';
+}
+
+// Fix 3: Horizontal strikethrough with 6 variations
+function generateStrikePath(w, h) {
+  const midY = h / 2;
+  // Uneven horizontal jagged line — slight random wobble, spans full width
+  const points = 7;
+  const segW = (w + 4) / (points - 1);
+  let d = `M -2 ${midY + (Math.random() - 0.5) * 2.5}`;
+  for (let i = 1; i < points; i++) {
+    const x = -2 + segW * i;
+    const wobble = (Math.random() - 0.5) * 3;
+    d += ` L ${x} ${midY + wobble}`;
+  }
+  return d;
+}
+
+function updateStrikePath(card) {
+  const strike = card.querySelector('.card-strike');
+  if (!strike) return;
+  const svg = strike.querySelector('svg');
+  const path = strike.querySelector('.strike-path');
+  if (!svg || !path) return;
+
+  const w = strike.offsetWidth;
+  const h = strike.offsetHeight;
+
+  // If dimensions are 0, the card hasn't laid out yet — retry
+  if (!w || w < 2 || !h || h < 2) {
+    setTimeout(() => updateStrikePath(card), 100);
+    return;
+  }
+
+  // Set viewBox for proper scaling
+  svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+
+  const d = generateStrikePath(w, h);
+  path.setAttribute('d', d);
+  path.style.strokeWidth = '1.5';
+
+  // Floor for path length
+  const len = Math.max(path.getTotalLength?.() || w * 1.2, 10);
+  path.style.strokeDasharray = len + '';
+  path.style.strokeDashoffset = card.classList.contains('done') ? '0' : len + '';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Add task on canvas
+// ──────────────────────────────────────────────────────────────────────────────
+
+function initCanvasAdd() {
+  const addBtn = document.getElementById('canvas-add-btn');
+  const addWrap = document.getElementById('canvas-add-input-wrap');
+  const addInput = document.getElementById('canvas-add-input');
+  if (!addBtn || !addWrap || !addInput) return;
+
+  addBtn.addEventListener('click', () => {
+    const isOpen = addWrap.classList.contains('visible');
+    if (isOpen) {
+      addWrap.classList.remove('visible');
+    } else {
+      addWrap.classList.add('visible');
+      addInput.focus();
+    }
+  });
+
+  addInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      const text = addInput.value.trim();
+      if (text) {
+        addTaskToCanvas(text);
+        addInput.value = '';
+        addWrap.classList.remove('visible');
+      }
+      e.preventDefault();
+    }
+    if (e.key === 'Escape') {
+      addWrap.classList.remove('visible');
+      addBtn.focus();
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (addWrap.classList.contains('visible') &&
+        !addWrap.contains(e.target) && e.target !== addBtn) {
+      addWrap.classList.remove('visible');
+    }
+  });
+}
+
+function addTaskToCanvas(text) {
+  const task = { id: makeId(), text };
+  state.tasks.push(task);
+
+  const canvas = document.getElementById('scatter-canvas');
+  const canvasRect = canvas.getBoundingClientRect();
+  const x = canvasRect.width / 2 - 60;
+  const y = canvasRect.height / 2 - 18;
+  state.cardPositions[task.id] = { x, y };
+
+  state.urgencyOrder.push(task.id);
+  state.importanceOrder.push(task.id);
+
+  const card = document.createElement('div');
+  card.className = 'canvas-card';
+  card.dataset.id = task.id;
+  card.tabIndex = 0;
+  card.setAttribute('role', 'button');
+  card.setAttribute('aria-pressed', 'false');
+  card.setAttribute('aria-label', `${task.text} — click to toggle done`);
+  card.style.left = x + 'px';
+  card.style.top = y + 'px';
+  card.style.opacity = '0';
+
+  card.innerHTML = `
+    <span class="card-text">${escapeHtml(task.text)}</span>
+    <div class="card-strike" aria-hidden="true">
+      <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
+    </div>
+    <span class="drag-hint" aria-hidden="true">\u2807</span>
+  `;
+
+  setupLongPressDrag(card, task.id);
+  setupSwipeStrike(card, task.id);
+
+  card.addEventListener('click', (e) => {
+    if (card._suppressNextClick) { card._suppressNextClick = false; return; }
+    onCanvasCardTap(card, task.id);
+  });
+  card.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onCanvasCardTap(card, task.id);
+    }
+    if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) {
+      e.preventDefault();
+      const STEP = 20;
+      const canvasRect2 = canvas.getBoundingClientRect();
+      const EDGE = 24;
+      let cx = parseFloat(card.style.left) || 0;
+      let cy = parseFloat(card.style.top) || 0;
+      if (e.key === 'ArrowLeft')  cx = Math.max(EDGE, cx - STEP);
+      if (e.key === 'ArrowRight') cx = Math.min(canvasRect2.width - card.offsetWidth - EDGE, cx + STEP);
+      if (e.key === 'ArrowUp')    cy = Math.max(EDGE, cy - STEP);
+      if (e.key === 'ArrowDown')  cy = Math.min(canvasRect2.height - card.offsetHeight - EDGE, cy + STEP);
+      card.style.left = cx + 'px';
+      card.style.top  = cy + 'px';
+      state.cardPositions[task.id] = { x: cx, y: cy };
+      announce(`${task.text} moved to ${Math.round(cx)}, ${Math.round(cy)}`);
+    }
+  });
+
+  canvas.appendChild(card);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    updateStrikePath(card);
+    card.animate([
+      { opacity: 0, transform: 'scale(0.9)' },
+      { opacity: 1, transform: 'scale(1)' }
+    ], { duration: 200, easing: 'ease-out', fill: 'forwards' });
+  }));
+
+  saveState();
+  announce(`Added ${task.text} to the map.`);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Long-press drag on canvas
+// ──────────────────────────────────────────────────────────────────────────────
+
+function setupLongPressDrag(card, id) {
+  let pressTimer = null;
+  let isDragging = false;
+  let startX, startY, startLeft, startTop;
+  let pointerId = null;
+  let moved = false;
+
+  const LONG_PRESS_MS = 400;
+  const MOVEMENT_TOLERANCE = 14;
+  const SNAP_THRESHOLD = 20;
+
+  function onStart(e) {
+    if (e.button !== undefined && e.button !== 0) return;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+    startX = clientX;
+    startY = clientY;
+    startLeft = parseFloat(card.style.left) || 0;
+    startTop = parseFloat(card.style.top) || 0;
+    moved = false;
+    isDragging = false;
+
+    if (e.pointerId !== undefined) pointerId = e.pointerId;
+
+    pressTimer = setTimeout(() => {
+      if (!moved) {
+        isDragging = true;
+        card.classList.add('grabbing');
+        // Lock scroll during canvas drag
+        document.body.style.overflow = 'hidden';
+
+        if (e.pointerId !== undefined) card.setPointerCapture(e.pointerId);
+
+        const rm = prefersReducedMotion();
+        if (!rm) {
+          card.style.transition = 'box-shadow 180ms ease-out';
+        }
+        card.style.boxShadow = 'var(--card-shadow-lift)';
+        card.style.zIndex = '100';
+
+        if (card._hasDragTooltip) {
+          const tooltip = card.querySelector('.drag-tooltip');
+          if (tooltip) {
+            tooltip.style.transition = 'opacity 200ms ease';
+            tooltip.style.opacity = '0';
+          }
+          card._hasDragTooltip = false;
+        }
+      }
+    }, LONG_PRESS_MS);
+  }
+
+  function onMove(e) {
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > MOVEMENT_TOLERANCE && !isDragging) {
+      clearTimeout(pressTimer);
+      pressTimer = null;
+      moved = true;
+    }
+
+    if (!isDragging) return;
+    e.preventDefault();
+
+    const canvas = document.getElementById('scatter-canvas');
+    const canvasRect = canvas.getBoundingClientRect();
+
+    let newLeft = startLeft + dx;
+    let newTop = startTop + dy;
+
+    const EDGE = 24;
+    newLeft = Math.max(EDGE, Math.min(canvasRect.width - card.offsetWidth - EDGE, newLeft));
+    newTop = Math.max(EDGE, Math.min(canvasRect.height - card.offsetHeight - EDGE, newTop));
+
+    card.style.left = newLeft + 'px';
+    card.style.top = newTop + 'px';
+  }
+
+  function onEnd(e) {
+    clearTimeout(pressTimer);
+    pressTimer = null;
+
+    if (!isDragging) return;
+
+    // Restore scroll
+    document.body.style.overflow = '';
+
+    const clientX = e.touches ? (e.changedTouches[0]?.clientX ?? startX) : e.clientX;
+    const clientY = e.touches ? (e.changedTouches[0]?.clientY ?? startY) : e.clientY;
+    const dx = clientX - startX;
+    const dy = clientY - startY;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    isDragging = false;
+    card.classList.remove('grabbing');
+    card.style.zIndex = '';
+
+    const rm = prefersReducedMotion();
+
+    card._suppressNextClick = true;
+    setTimeout(() => { card._suppressNextClick = false; }, 300);
+
+    if (dist < SNAP_THRESHOLD) {
+      const snapDur = rm ? 0 : 180;
+      card.style.transition = `left ${snapDur}ms ease-out, top ${snapDur}ms ease-out, box-shadow ${snapDur}ms ease`;
+      card.style.left = startLeft + 'px';
+      card.style.top = startTop + 'px';
+      card.style.boxShadow = '';
+      setTimeout(() => { card.style.transition = ''; }, snapDur + 10);
+    } else {
+      card.style.boxShadow = '';
+      card.style.transition = 'box-shadow 150ms ease';
+      state.cardPositions[id] = {
+        x: parseFloat(card.style.left),
+        y: parseFloat(card.style.top),
+      };
+      saveState();
+      setTimeout(() => { card.style.transition = ''; }, 160);
+    }
+  }
+
+  card.addEventListener('pointerdown', onStart);
+  card.addEventListener('pointermove', onMove);
+  card.addEventListener('pointerup', onEnd);
+  card.addEventListener('pointercancel', onEnd);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// localStorage persistence
+// ──────────────────────────────────────────────────────────────────────────────
+
+const LS_KEY = 'eisenhower-matrix-state';
+
+function saveState() {
+  try {
+    const serializable = {
+      tasks: state.tasks,
+      urgencyOrder: state.urgencyOrder,
+      importanceOrder: state.importanceOrder,
+      phase: state.phase,
+      cardPositions: state.cardPositions,
+      done: Array.from(state.done),
+      idCounter,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(serializable));
+  } catch(e) {}
+}
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (!saved || !Array.isArray(saved.tasks) || saved.tasks.length === 0) return false;
+
+    state.tasks = saved.tasks;
+    state.urgencyOrder = saved.urgencyOrder || [];
+    state.importanceOrder = saved.importanceOrder || [];
+    state.cardPositions = saved.cardPositions || {};
+    state.done = new Set(saved.done || []);
+    idCounter = saved.idCounter || saved.tasks.length;
+
+    // Migrate old phase names
+    let phase = saved.phase || 'dump';
+    if (phase === 'sort') {
+      phase = saved.sortPass === 1 ? 'sort-importance' : 'sort-urgency';
+    }
+
+    return phase;
+  } catch(e) {
+    return false;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Start fresh
+// ──────────────────────────────────────────────────────────────────────────────
+
+function doStartFresh() {
+  state.tasks = [];
+  state.urgencyOrder = [];
+  state.importanceOrder = [];
+  state.cardPositions = {};
+  state.done = new Set();
+  idCounter = 0;
+
+  // Clear canvas
+  document.getElementById('scatter-canvas').querySelectorAll('.canvas-card').forEach(c => c.remove());
+  // Reset lines
+  document.querySelectorAll('.q-line').forEach(l => {
+    l.classList.remove('drawn');
+    l.style.strokeDashoffset = l.style.strokeDasharray;
+  });
+
+  try { localStorage.removeItem(LS_KEY); } catch(e) {}
+
+  // Re-init dump
+  document.getElementById('dump-cards').innerHTML = '';
+  document.getElementById('dump-input').value = '';
+  document.getElementById('phase-dump').classList.remove('has-tasks');
+  const suggestBtn = document.getElementById('btn-suggest-tasks');
+  if (suggestBtn) { suggestBtn.style.opacity = ''; suggestBtn.style.pointerEvents = ''; }
+
+  updateSortButton();
+  showPhase('dump');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  document.getElementById('dump-input').focus();
+  announce('Starting fresh. Add your tasks.');
+}
+
+function initStartFresh() {
+  const btn = document.getElementById('btn-start-fresh');
+  let confirmTimer = null;
+
+  function resetConfirmState() {
+    btn.textContent = 'start fresh';
+    btn.classList.remove('confirming');
+    btn.setAttribute('aria-label', 'Start fresh — tap again to confirm');
+    clearTimeout(confirmTimer);
+    confirmTimer = null;
+  }
+
+  btn.addEventListener('click', () => {
+    if (btn.classList.contains('confirming')) {
+      resetConfirmState();
+      doStartFresh();
+    } else {
+      btn.textContent = 'tap again to confirm';
+      btn.classList.add('confirming');
+      btn.setAttribute('aria-label', 'Tap again to confirm start fresh');
+      announce('Tap again to confirm. This will clear all tasks.');
+      confirmTimer = setTimeout(() => {
+        resetConfirmState();
+      }, 3000);
+    }
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Fix 1: Sort tips system
+// ──────────────────────────────────────────────────────────────────────────────
+
+const URGENCY_TIPS = [
+  "Go with your gut. The first instinct is almost always right.",
+  "If two feel similar, place the one making more noise in your head higher.",
+  "Urgency has a clock \u2014 if I ignore this for a week, does something go wrong?",
+  "A rough ranking is enough. You can adjust on the map later.",
+  "Sort quickly. A rough map seen fast is more useful than a perfect map seen never."
+];
+
+const IMPORTANCE_TIPS = [
+  "Importance has weight \u2014 does this connect to something you genuinely care about?",
+  "The task that keeps surfacing in your mind, unprompted, is asking to be ranked higher.",
+  "Important work is rarely urgent. Urgent work is rarely important.",
+  "Ask yourself: does completing this move something meaningful forward?",
+  "Notice if everything feels important. That feeling is worth sitting with."
+];
+
+let urgencyTipIdx = 0;
+let importanceTipIdx = 0;
+
+function initSortTips() {
+  const urgencyTip = document.getElementById('sort-tip-urgency');
+  const importanceTip = document.getElementById('sort-tip-importance');
+
+  if (urgencyTip) {
+    const textEl = urgencyTip.querySelector('.sort-tip-text');
+    const nextBtn = urgencyTip.querySelector('.sort-tip-next');
+    textEl.textContent = URGENCY_TIPS[0];
+    nextBtn.addEventListener('click', () => {
+      urgencyTipIdx = (urgencyTipIdx + 1) % URGENCY_TIPS.length;
+      textEl.textContent = URGENCY_TIPS[urgencyTipIdx];
+    });
+  }
+
+  if (importanceTip) {
+    const textEl = importanceTip.querySelector('.sort-tip-text');
+    const nextBtn = importanceTip.querySelector('.sort-tip-next');
+    textEl.textContent = IMPORTANCE_TIPS[0];
+    nextBtn.addEventListener('click', () => {
+      importanceTipIdx = (importanceTipIdx + 1) % IMPORTANCE_TIPS.length;
+      textEl.textContent = IMPORTANCE_TIPS[importanceTipIdx];
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Fix 1: Map guide
+// ──────────────────────────────────────────────────────────────────────────────
+
+function initMapGuide() {
+  const toggle = document.getElementById('map-guide-toggle');
+  const content = document.getElementById('map-guide-content');
+  const close = document.getElementById('map-guide-close');
+  if (!toggle || !content) return;
+
+  toggle.addEventListener('click', () => {
+    content.classList.toggle('open');
+    toggle.setAttribute('aria-expanded', content.classList.contains('open') ? 'true' : 'false');
+  });
+  if (close) {
+    close.addEventListener('click', () => {
+      content.classList.remove('open');
+      toggle.setAttribute('aria-expanded', 'false');
+      toggle.focus();
+    });
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Fix 5: Position fake cursor to left of placeholder
+// ──────────────────────────────────────────────────────────────────────────────
+
+function positionFakeCursor() {
+  const input = document.getElementById('dump-input');
+  const cursor = document.querySelector('.fake-cursor');
+  if (!cursor || !input) return;
+  const measurer = document.createElement('span');
+  measurer.style.font = getComputedStyle(input).font;
+  measurer.style.position = 'absolute';
+  measurer.style.visibility = 'hidden';
+  measurer.textContent = input.placeholder;
+  document.body.appendChild(measurer);
+  const textWidth = measurer.offsetWidth;
+  document.body.removeChild(measurer);
+  const inputWidth = input.offsetWidth;
+  const startX = (inputWidth - textWidth) / 2;
+  cursor.style.left = (startX - 12) + 'px';
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Fix 2: Scroll-triggered phase transitions
+// ──────────────────────────────────────────────────────────────────────────────
+
+function initScrollObserver() {
+  if (!('IntersectionObserver' in window)) return;
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const phase = Object.keys(PHASE_IDS).find(k => PHASE_IDS[k] === el.id);
+      if (!phase) return;
+      const phaseIdx = PHASE_ORDER.indexOf(phase);
+      const currentIdx = PHASE_ORDER.indexOf(state.phase);
+
+      // Only auto-activate if this is the next phase and previous is completed
+      if (phaseIdx === currentIdx + 1) {
+        // Check if the previous phase has been "completed" (has tasks, etc.)
+        const prevPhase = PHASE_ORDER[currentIdx];
+        if (prevPhase === 'dump' && state.tasks.length > 0) {
+          // Don't auto-transition from dump — user must click "ready to sort"
+        } else if (prevPhase === 'sort-urgency' || prevPhase === 'sort-importance') {
+          // Don't auto-transition from sort — user must click "done sorting"
+        }
+      }
+
+      // If scrolling back up to a completed phase, expand it temporarily
+      if (phaseIdx < currentIdx && el.classList.contains('phase-completed')) {
+        // Allow click on summary bar to expand (already handled)
+      }
+    });
+  }, {
+    threshold: 0.3
+  });
+
+  PHASE_ORDER.forEach(phase => {
+    const el = document.getElementById(PHASE_IDS[phase]);
+    if (el) observer.observe(el);
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Boot
+// ──────────────────────────────────────────────────────────────────────────────
+
+function init() {
+  initSort();
+  initStartFresh();
+  initCanvasAdd();
+  initDump();
+  initSortTips();
+  initMapGuide();
+  initScrollObserver();
+
+  const savedPhase = loadSavedState();
+
+  if (savedPhase && savedPhase !== 'dump') {
+    if (savedPhase === 'scatter') {
+      showPhase('scatter');
+      document.fonts.ready.then(() => {
+        const canvas = document.getElementById('scatter-canvas');
+        const canvasRect = canvas.getBoundingClientRect();
+        if (canvasRect.width > 0) {
+          if (Object.keys(state.cardPositions).length === 0) {
+            state.cardPositions = computeCanvasPositions(canvasRect.width, canvasRect.height);
+          }
+          buildCanvasCards(prefersReducedMotion());
+          canvas.querySelectorAll('.canvas-card').forEach(c => { c.style.opacity = '1'; });
+          drawQuadrantLines(prefersReducedMotion());
+          announce('Restored previous session. Click any task to mark it done.');
+        }
+      });
+    } else if (savedPhase === 'sort-urgency') {
+      renderSortList('urgency');
+      showPhase('sort-urgency');
+      announce('Restored urgency sorting session.');
+    } else if (savedPhase === 'sort-importance') {
+      renderSortList('urgency');
+      renderSortList('importance');
+      showPhase('sort-importance');
+      announce('Restored importance sorting session.');
+    }
+  } else {
+    showPhase('dump');
+    document.fonts.ready.then(() => {
+      document.getElementById('dump-input').focus();
+    });
+  }
+}
+
+init();
+</script>
+</body>
+</html>
