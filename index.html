@@ -39,111 +39,99 @@
   --radius: 12px;
   --font-display: 'Manrope', sans-serif;
   --font-body: 'Plus Jakarta Sans', sans-serif;
-  --summary-h: 64px;
-}
-
-html {
-  scroll-behavior: smooth;
 }
 
 html, body {
-  height: auto;
-  min-height: 100vh;
+  height: 100%;
   background: var(--canvas-bg);
   color: var(--text);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
-  overflow: auto;
+  overflow: hidden; /* Lock — no native scrolling */
 }
 
 /* ── Vertical flow container ── */
 .flow-container {
-  min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── Phase navigation buttons ── */
+.phase-nav-btn {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--sage-interactive);
+  cursor: pointer;
   display: flex;
   flex-direction: column;
-  scroll-snap-type: y proximity;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  transition: color 150ms, transform 200ms ease, opacity 200ms;
+}
+.phase-nav-btn .nav-arrow {
+  font-size: 16px;
+  line-height: 1;
+  transition: transform 200ms ease;
+}
+.phase-nav-btn:hover {
+  color: var(--sage);
+}
+.phase-nav-btn:hover .nav-arrow {
+  transform: translateY(2px);
+}
+.phase-nav-btn:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.phase:not(.phase-active) .phase-nav-btn {
+  display: none;
 }
 
 /* ── Phase states ── */
 .phase {
-  position: relative;
-  overflow: hidden;
-  transition: max-height 500ms cubic-bezier(0.4, 0, 0.2, 1),
-              opacity 300ms ease,
-              padding 400ms cubic-bezier(0.4, 0, 0.2, 1);
-  scroll-snap-align: start;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto; /* Allow internal scrolling within a phase */
+  transition: transform 400ms cubic-bezier(0.25, 0.1, 0.25, 1), opacity 250ms ease;
 }
 
 .phase-pending {
-  max-height: 0;
+  transform: translateY(100%);
   opacity: 0;
   pointer-events: none;
-  padding: 0;
+  z-index: 0;
 }
 
 .phase-active {
-  max-height: none;
+  transform: translateY(0);
   opacity: 1;
   pointer-events: all;
+  z-index: 10;
 }
 
 .phase-completed {
-  max-height: var(--summary-h);
-  opacity: 1;
-  pointer-events: all;
-  cursor: pointer;
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .phase {
-    transition: opacity 100ms ease;
+    transition: opacity 100ms ease, transform 0ms;
   }
-  .phase-pending { opacity: 0; max-height: 0; }
-  .phase-completed { max-height: var(--summary-h); }
-}
-
-/* ── Summary bar (completed phases) ── */
-.phase-summary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: var(--summary-h);
-  padding: 0 24px;
-  background: var(--canvas-bg);
-  border-bottom: 1px solid var(--sage-08);
-  font-family: var(--font-display);
-  font-size: 13px;
-  color: var(--sage-label);
-  letter-spacing: 0.01em;
-  flex-shrink: 0;
-}
-
-.phase-summary .summary-text {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.phase-summary .summary-edit {
-  background: none;
-  border: none;
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--sage-45);
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 6px;
-  transition: color 150ms, background 150ms;
-  letter-spacing: 0.01em;
-}
-.phase-summary .summary-edit:hover {
-  color: var(--sage);
-  background: var(--sage-08);
-}
-.phase-summary .summary-edit:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 2px;
-  border-radius: 4px;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━
@@ -153,12 +141,8 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: var(--canvas-bg);
-}
-
-#phase-dump.phase-active {
-  min-height: 100vh;
   justify-content: center;
+  background: var(--canvas-bg);
 }
 
 .dump-inner {
@@ -178,7 +162,7 @@ html, body {
   width: 100%;
   background: transparent;
   border: none;
-  border-bottom: none;
+  border-bottom: 1px solid var(--sage-15);
   padding: 12px 0;
   font-family: var(--font-body);
   font-size: 24px;
@@ -186,7 +170,12 @@ html, body {
   outline: none;
   caret-color: var(--sage);
   transition: border-color 200ms;
-  text-align: center;
+  text-align: left;
+}
+
+/* When has tasks, always show the underline so input remains findable */
+.dump-input-wrap.has-value #dump-input {
+  border-bottom: 1px solid var(--sage-15);
 }
 
 #dump-input:focus {
@@ -202,8 +191,7 @@ html, body {
 .input-underline {
   position: absolute;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
   width: 0;
   height: 2px;
   background: var(--sage);
@@ -211,6 +199,8 @@ html, body {
   opacity: 0.3;
   border-radius: 1px;
 }
+/* Underline shows during typewriter animation AND on focus */
+.dump-input-wrap.typewriter-active .input-underline,
 .dump-input-wrap:focus-within .input-underline {
   width: 100%;
 }
@@ -218,7 +208,7 @@ html, body {
 /* Phase 4.4: "Press enter to dump" hint */
 .dump-hint {
   display: block;
-  text-align: center;
+  text-align: left;
   font-family: var(--font-display);
   font-size: 10px;
   text-transform: uppercase;
@@ -229,8 +219,11 @@ html, body {
   padding-top: 8px;
   pointer-events: none;
 }
+/* Show hint on focus OR when tasks exist (so input stays findable) */
 .dump-input-wrap:focus-within + .dump-hint,
-.dump-input-wrap:focus-within ~ .dump-hint {
+.dump-input-wrap:focus-within ~ .dump-hint,
+.dump-input-wrap.has-value + .dump-hint,
+.dump-input-wrap.has-value ~ .dump-hint {
   opacity: 0.4;
 }
 
@@ -239,12 +232,17 @@ html, body {
   flex-direction: column;
   gap: 6px;
   margin-top: 16px;
-  max-height: calc(100vh - 260px);
+  max-height: 45vh;
   overflow-y: auto;
-  padding-bottom: 2px;
+  padding-bottom: 60px; /* space to scroll past the fade and see bottom items */
   scrollbar-width: none;
 }
 .dump-cards::-webkit-scrollbar { display: none; }
+/* Fade extends to bottom — always present when overflow, cards scroll beneath it */
+.dump-cards.has-overflow {
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 95%);
+  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 95%);
+}
 
 .dump-card {
   background: var(--card-bg);
@@ -317,13 +315,14 @@ html, body {
 
 .dump-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 16px;
   padding: 16px 0 8px;
   min-height: 48px;
   align-items: center;
 }
 
-/* Phase 4.3: "suggest 8 tasks" button */
+/* Phase 4.3: "suggest tasks" button */
 #btn-suggest-tasks {
   background: none;
   border: none;
@@ -342,31 +341,14 @@ html, body {
   border-radius: 4px;
 }
 
+/* #btn-ready-sort visibility — controlled by .visible class */
 #btn-ready-sort {
-  background: none;
-  border: none;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--sage-interactive);
-  cursor: pointer;
-  padding: 6px 0;
   opacity: 0;
   pointer-events: none;
-  transition: color 150ms, opacity 150ms;
-  letter-spacing: 0.01em;
 }
-
 #btn-ready-sort.visible {
   opacity: 1;
   pointer-events: all;
-}
-
-#btn-ready-sort:hover { color: var(--sage); }
-
-#btn-ready-sort:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 4px;
-  border-radius: 4px;
 }
 
 /* ━━━━━━━━━━━━━━━━━━━━━━
@@ -379,19 +361,14 @@ html, body {
   background: var(--canvas-bg);
 }
 
-.sort-section.phase-active {
-  min-height: 100vh;
-}
-
 .sort-inner {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   flex: 1;
-  overflow: hidden;
+  overflow: visible;
   padding: 48px 0 24px;
-  min-height: 80vh;
   justify-content: center;
 }
 
@@ -414,38 +391,58 @@ html, body {
 }
 
 /* Sort pass background tints */
-.sort-pass-urgency { background: rgba(180, 120, 60, 0.02); }
-.sort-pass-importance { background: rgba(82, 99, 71, 0.02); }
+/* Phase tints — gradient edges blend seamlessly between pages */
+#phase-dump {
+  background: linear-gradient(
+    to bottom,
+    var(--canvas-bg) 0%,
+    var(--canvas-bg) 70%,
+    var(--canvas-bg) 100%
+  );
+}
+
+.sort-pass-urgency {
+  background: linear-gradient(
+    to bottom,
+    var(--canvas-bg) 0%,
+    rgba(200, 140, 60, 0.035) 30%,
+    rgba(200, 140, 60, 0.035) 70%,
+    var(--canvas-bg) 100%
+  );
+}
+
+.sort-pass-importance {
+  background: linear-gradient(
+    to bottom,
+    var(--canvas-bg) 0%,
+    rgba(190, 170, 50, 0.03) 30%,
+    rgba(190, 170, 50, 0.03) 70%,
+    var(--canvas-bg) 100%
+  );
+}
+
+#phase-scatter {
+  background: linear-gradient(
+    to bottom,
+    var(--canvas-bg) 0%,
+    rgba(82, 99, 71, 0.02) 30%,
+    rgba(82, 99, 71, 0.02) 70%,
+    var(--canvas-bg) 100%
+  );
+}
 
 /* Phase 1.1: NO left border accents — removed */
-
-.btn-back {
-  background: none;
-  border: none;
-  font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--sage-45);
-  cursor: pointer;
-  padding: 6px 0;
-  transition: color 150ms;
-  letter-spacing: 0.01em;
-}
-.btn-back:hover { color: var(--sage); }
-.btn-back:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
 
 .sort-list {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  flex: 1;
+  flex: none;
   overflow-y: auto;
-  padding-bottom: 8px;
+  padding-bottom: 80px;
   scrollbar-width: none;
   position: relative;
+  max-height: 60vh;
 }
 .sort-list::-webkit-scrollbar { display: none; }
 
@@ -460,6 +457,8 @@ html, body {
   align-items: center;
   gap: 10px;
   cursor: grab;
+  flex-shrink: 0;
+  min-height: 40px;
   user-select: none;
   touch-action: none;
   transition: box-shadow 150ms ease, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -500,30 +499,15 @@ html, body {
   flex: 1;
 }
 
-.sort-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 16px 0 0;
+/* ── Swipe-to-delete wrapper ── */
+.sort-card-wrap {
+  position: relative;
+  overflow: visible;
+  border-radius: var(--radius);
+  flex-shrink: 0;
 }
 
-.btn-sort-done {
-  background: none;
-  border: none;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--sage-interactive);
-  cursor: pointer;
-  padding: 6px 0;
-  transition: color 150ms;
-  letter-spacing: 0.01em;
-}
-.btn-sort-done:hover { color: var(--sage); }
-.btn-sort-done:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 4px;
-  border-radius: 4px;
-}
+
 
 /* ━━━━━━━━━━━━━━━━━━━━━━
    PHASE 3: SCATTER
@@ -532,16 +516,13 @@ html, body {
   background: var(--canvas-bg);
   display: flex;
   flex-direction: column;
-}
-
-#phase-scatter.phase-active {
-  min-height: 100vh;
+  overflow: hidden; /* scatter should not internally scroll */
 }
 
 .scatter-canvas {
   position: relative;
   flex: 1;
-  min-height: calc(100vh - 48px);
+  height: 100%;
   overflow: hidden;
 }
 
@@ -1000,29 +981,37 @@ html, body {
   border-radius: 4px;
 }
 
-/* ── Fake blinking cursor for hero input ── */
-.fake-cursor {
+/* ── Typewriter animation for hero input ── */
+.typewriter {
   position: absolute;
   top: 50%;
+  left: 0;
   transform: translateY(-50%);
-  color: var(--sage);
-  opacity: 0.5;
   font-family: var(--font-body);
   font-size: 24px;
-  font-weight: 300;
-  animation: blink 1.2s step-start infinite;
-  pointer-events: none;
-  line-height: 1;
+  color: rgba(46, 52, 45, 0.28);
+  pointer-events: all;
+  cursor: text;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid rgba(82, 99, 71, 0.5);
+  animation: cursorBlink 1s step-start infinite;
+  transition: color 200ms ease;
 }
 
-.dump-input-wrap:focus-within .fake-cursor,
-.dump-input-wrap.has-value .fake-cursor {
+/* Hover on the entire input-wrap area, not just the text */
+.dump-input-wrap:hover .typewriter {
+  color: rgba(46, 52, 45, 0.75);
+}
+
+.dump-input-wrap:focus-within .typewriter,
+.dump-input-wrap.has-value .typewriter {
   display: none;
 }
 
-@keyframes blink {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 0; }
+@keyframes cursorBlink {
+  0%, 100% { border-right-color: rgba(82, 99, 71, 0.5); }
+  50% { border-right-color: transparent; }
 }
 
 /* ── Focus ring ── */
@@ -1037,7 +1026,7 @@ button:focus-visible {
   font-family: var(--font-display);
   font-size: 13px;
   color: var(--sage-label);
-  text-align: center;
+  text-align: left;
   margin-bottom: 24px;
   line-height: 1.6;
   transition: opacity 400ms ease;
@@ -1052,26 +1041,54 @@ button:focus-visible {
   text-align: center;
   padding: 12px 0 4px;
   min-height: 32px;
+  overflow: hidden;
+  position: relative;
 }
 .sort-tip-text {
   font-family: var(--font-body);
   font-size: 11px;
   color: var(--sage-45);
   line-height: 1.5;
+  display: block;
+  animation: tipSlideUp 600ms ease forwards;
 }
-.sort-tip-next {
-  background: none;
-  border: none;
-  font-family: var(--font-body);
-  font-size: 10px;
-  color: var(--sage-45);
-  cursor: pointer;
-  padding: 2px 6px;
-  margin-left: 6px;
-  letter-spacing: 0.02em;
-  transition: color 150ms;
+
+@keyframes tipSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
-.sort-tip-next:hover { color: var(--sage); }
+
+@keyframes tipSlideOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sort-tip-text {
+    animation: none;
+    opacity: 1;
+  }
+}
 
 /* Map guide */
 .map-guide-toggle {
@@ -1136,18 +1153,11 @@ button:focus-visible {
 .sort-inner > .sort-progress,
 .sort-inner > .sort-header,
 .sort-inner > .sort-list,
-.sort-inner > .sort-tip,
-.sort-inner > .sort-footer {
+.sort-inner > .sort-tip {
   width: min(520px, 100% - 48px);
 }
-.sort-footer {
-  padding: 16px 0 0;
-  margin-top: 0;
-}
 
-@media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
-}
+/* (reduced-motion for scroll behavior removed — viewport is locked) */
 </style>
 </head>
 <body>
@@ -1161,10 +1171,6 @@ button:focus-visible {
        PHASE 1: DUMP
   ═══════════════════════════════════════ -->
   <section id="phase-dump" class="phase phase-active" aria-label="Brain dump — add everything on your mind">
-    <div class="phase-summary" id="dump-summary" style="display:none;" aria-hidden="true">
-      <span class="summary-text" id="dump-summary-text">0 tasks added</span>
-      <button class="summary-edit" id="dump-summary-edit" aria-label="Edit brain dump">edit</button>
-    </div>
     <div class="dump-inner" id="dump-inner">
       <h2 class="sr-only">Brain dump</h2>
       <p class="dump-intro">Your head is full. That's why you're here.<br>
@@ -1173,33 +1179,30 @@ Write out everything — don't sort yet, don't judge. Just get it out.</p>
         <input
           type="text"
           id="dump-input"
-          placeholder="anything on your mind"
+          placeholder=""
           aria-label="Add a task"
           autocomplete="off"
           autocorrect="off"
         >
-        <span class="fake-cursor" aria-hidden="true">|</span>
+        <span class="typewriter" id="typewriter" aria-hidden="true"></span>
         <div class="input-underline"></div>
       </div>
       <span class="dump-hint" id="dump-hint">Press enter to dump</span>
       <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
       <div class="dump-footer">
-        <button id="btn-suggest-tasks" aria-label="Suggest 8 example tasks">suggest 8 tasks</button>
-        <button id="btn-ready-sort" aria-label="Ready to sort your tasks">
-          ready to sort <span aria-hidden="true">&#8595;</span>
-        </button>
+        <button id="btn-suggest-tasks" aria-label="Suggest example tasks">suggest tasks</button>
       </div>
     </div>
+    <button class="phase-nav-btn" id="btn-ready-sort" aria-label="Ready to sort your tasks">
+      <span class="nav-label">ready to sort</span>
+      <span class="nav-arrow" aria-hidden="true">&#8595;</span>
+    </button>
   </section>
 
   <!-- ═══════════════════════════════════════
        PHASE 2a: SORT URGENCY
   ═══════════════════════════════════════ -->
   <section id="phase-sort-urgency" class="phase phase-pending sort-section sort-pass-urgency" aria-label="Sort tasks by urgency" aria-hidden="true">
-    <div class="phase-summary" id="urgency-summary" style="display:none;" aria-hidden="true">
-      <span class="summary-text">urgency ranked</span>
-      <button class="summary-edit" id="urgency-summary-edit" aria-label="Re-rank urgency">edit</button>
-    </div>
     <div class="sort-inner" id="urgency-inner">
       <div class="sort-progress" aria-live="polite">sorting urgency &#8212; 1 of 2</div>
       <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#128293;</span> Drag to order by urgency.
@@ -1212,25 +1215,18 @@ Most urgent at the top.</h2>
       ></div>
       <div class="sort-tip" id="sort-tip-urgency" aria-live="polite">
         <span class="sort-tip-text"></span>
-        <button class="sort-tip-next" aria-label="Next tip">next tip</button>
-      </div>
-      <div class="sort-footer">
-        <button class="btn-back" id="btn-urgency-back" aria-label="Go back to brain dump"><span aria-hidden="true">&#8593;</span> edit tasks</button>
-        <button class="btn-sort-done" id="btn-urgency-done" aria-label="Done sorting urgency">
-          done sorting <span aria-hidden="true">&#8595;</span>
-        </button>
       </div>
     </div>
+    <button class="phase-nav-btn" id="btn-urgency-done" aria-label="Done sorting urgency">
+      <span class="nav-label">done sorting</span>
+      <span class="nav-arrow" aria-hidden="true">&#8595;</span>
+    </button>
   </section>
 
   <!-- ═══════════════════════════════════════
        PHASE 2b: SORT IMPORTANCE
   ═══════════════════════════════════════ -->
   <section id="phase-sort-importance" class="phase phase-pending sort-section sort-pass-importance" aria-label="Sort tasks by importance" aria-hidden="true">
-    <div class="phase-summary" id="importance-summary" style="display:none;" aria-hidden="true">
-      <span class="summary-text">importance ranked</span>
-      <button class="summary-edit" id="importance-summary-edit" aria-label="Re-rank importance">edit</button>
-    </div>
     <div class="sort-inner" id="importance-inner">
       <div class="sort-progress" aria-live="polite">sorting importance &#8212; 2 of 2</div>
       <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#127807;</span> Now order by importance.
@@ -1243,15 +1239,12 @@ Most important at the top.</h2>
       ></div>
       <div class="sort-tip" id="sort-tip-importance" aria-live="polite">
         <span class="sort-tip-text"></span>
-        <button class="sort-tip-next" aria-label="Next tip">next tip</button>
-      </div>
-      <div class="sort-footer">
-        <button class="btn-back" id="btn-importance-back" aria-label="Go back to urgency sorting"><span aria-hidden="true">&#8593;</span> re-rank urgency</button>
-        <button class="btn-sort-done" id="btn-importance-done" aria-label="Done sorting importance">
-          done sorting <span aria-hidden="true">&#8595;</span>
-        </button>
       </div>
     </div>
+    <button class="phase-nav-btn" id="btn-importance-done" aria-label="Done sorting importance">
+      <span class="nav-label">done sorting</span>
+      <span class="nav-arrow" aria-hidden="true">&#8595;</span>
+    </button>
   </section>
 
   <!-- ═══════════════════════════════════════
@@ -1390,91 +1383,40 @@ const PHASE_IDS = {
 };
 
 function showPhase(targetPhase) {
-  const rm = prefersReducedMotion();
   const targetIdx = PHASE_ORDER.indexOf(targetPhase);
+
+  // Restore transitions on ALL phases before switching
+  // (rubber-band pull sets transition:none on active phase)
+  document.querySelectorAll('.phase').forEach(el => {
+    el.style.transition = '';
+    el.style.transform = '';
+  });
+
+  // Force a reflow so the transition restoration takes effect
+  // before we change classes
+  document.body.offsetHeight;
 
   PHASE_ORDER.forEach((phase, idx) => {
     const el = document.getElementById(PHASE_IDS[phase]);
-    const inner = el.querySelector('.sort-inner, .dump-inner, .scatter-canvas');
-    const summary = el.querySelector('.phase-summary');
-
     el.classList.remove('phase-pending', 'phase-active', 'phase-completed');
 
     if (idx < targetIdx) {
-      // Completed — compress to summary bar
-      compressPhase(el, summary, inner, rm);
-    } else if (idx === targetIdx) {
-      // Active — expand
-      expandPhase(el, summary, inner, rm);
-    } else {
-      // Pending — collapse
-      el.classList.add('phase-pending');
+      el.classList.add('phase-completed'); // slides up and out
       el.setAttribute('aria-hidden', 'true');
-      if (summary) { summary.style.display = 'none'; summary.setAttribute('aria-hidden', 'true'); }
-      if (inner) inner.style.display = '';
+    } else if (idx === targetIdx) {
+      el.classList.add('phase-active'); // slides into view
+      el.scrollTop = 0;
+      el.removeAttribute('aria-hidden');
+    } else {
+      el.classList.add('phase-pending'); // stays below
+      el.setAttribute('aria-hidden', 'true');
     }
   });
 
   state.phase = targetPhase;
 
-  // Show start-fresh only on scatter
   const sfWrap = document.getElementById('start-fresh-wrap');
   if (sfWrap) sfWrap.classList.toggle('visible', targetPhase === 'scatter');
-
-  // Scroll to active phase
-  requestAnimationFrame(() => {
-    const activeEl = document.getElementById(PHASE_IDS[targetPhase]);
-    if (activeEl) {
-      activeEl.scrollIntoView({ behavior: rm ? 'auto' : 'smooth', block: 'start' });
-    }
-  });
-}
-
-function compressPhase(el, summary, inner, rm) {
-  // Update summary text
-  updateSummaryText(el.id);
-
-  if (summary) {
-    summary.style.display = '';
-    summary.removeAttribute('aria-hidden');
-  }
-  if (inner) inner.style.display = 'none';
-
-  // Animate compression
-  const scrollH = el.scrollHeight;
-  if (!rm && scrollH > 64) {
-    el.style.maxHeight = scrollH + 'px';
-    el.offsetHeight; // force reflow
-    el.classList.add('phase-completed');
-  } else {
-    el.classList.add('phase-completed');
-  }
-
-  el.removeAttribute('aria-hidden');
-}
-
-function expandPhase(el, summary, inner, rm) {
-  if (summary) { summary.style.display = 'none'; summary.setAttribute('aria-hidden', 'true'); }
-  if (inner) inner.style.display = '';
-
-  if (!rm) {
-    // Animate from current height to full
-    el.classList.add('phase-active');
-    el.style.maxHeight = 'none';
-  } else {
-    el.classList.add('phase-active');
-    el.style.maxHeight = 'none';
-  }
-
-  el.removeAttribute('aria-hidden');
-}
-
-function updateSummaryText(elId) {
-  if (elId === 'phase-dump') {
-    const txt = document.getElementById('dump-summary-text');
-    if (txt) txt.textContent = `${state.tasks.length} task${state.tasks.length !== 1 ? 's' : ''} added`;
-  }
-  // Urgency and importance summaries have static text
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1488,16 +1430,27 @@ function initDump() {
 
   renderDumpCards();
   updateSortButton();
+  updateDumpOverflow();
   // Fix 1: toggle has-tasks on dump phase for intro fade
   document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
-  // Fix 5: position fake cursor
-  document.fonts.ready.then(() => positionFakeCursor());
-  window.addEventListener('resize', positionFakeCursor);
 
-  // Toggle .has-value class on wrapper for fake cursor visibility
+  // Toggle .has-value class — hide typewriter when input has text OR tasks exist
   input.addEventListener('input', () => {
-    input.parentElement.classList.toggle('has-value', input.value.length > 0);
+    input.parentElement.classList.toggle('has-value', input.value.length > 0 || state.tasks.length > 0);
   });
+
+  // Typewriter: hide on focus, restart on blur if empty
+  input.addEventListener('focus', () => {
+    stopTypewriter();
+  });
+  input.addEventListener('blur', () => {
+    if (!input.value && state.tasks.length === 0) {
+      startTypewriter();
+    }
+  });
+
+  // Initialize typewriter animation
+  initTypewriter();
 
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
@@ -1512,7 +1465,7 @@ function initDump() {
     }
   });
 
-  // Phase 4.3: "suggest 8 tasks" button
+  // Phase 4.3: "suggest tasks" button
   if (btnSuggest) {
     btnSuggest.addEventListener('click', () => {
       const sampleIds = [];
@@ -1555,26 +1508,14 @@ function initDump() {
     }
   });
 
-  // Summary bar edit button
-  const dumpEditBtn = document.getElementById('dump-summary-edit');
-  if (dumpEditBtn) {
-    dumpEditBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      showPhase('dump');
-      renderDumpCards();
-      updateSortButton();
-      document.getElementById('dump-input').focus();
-      announce('Editing brain dump.');
-      saveState();
-    });
-  }
 }
 
 function addTask(text, animate) {
   const task = { id: makeId(), text };
   state.tasks.unshift(task);
-  // Fix 1: fade out dump intro when tasks exist
+  stopTypewriter();
   document.getElementById('phase-dump').classList.add('has-tasks');
+  document.querySelector('.dump-input-wrap')?.classList.add('has-value');
   if (!animate) return;
   const cardsEl = document.getElementById('dump-cards');
   const card = createDumpCard(task);
@@ -1586,6 +1527,7 @@ function addTask(text, animate) {
     suggestBtn.style.pointerEvents = 'none';
   }
   card.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  updateDumpOverflow();
 }
 
 function createDumpCard(task) {
@@ -1613,10 +1555,18 @@ function deleteDumpTask(id) {
     card.style.transition = 'opacity 150ms ease, transform 150ms ease';
     card.style.opacity = '0';
     card.style.transform = 'translateX(8px)';
-    setTimeout(() => card.remove(), 160);
+    setTimeout(() => { card.remove(); updateDumpOverflow(); }, 160);
   }
-  // Fix 1: toggle has-tasks class
   document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
+  // Toggle has-value on input wrap — hides typewriter when tasks exist
+  const inputWrap = document.querySelector('.dump-input-wrap');
+  if (inputWrap) inputWrap.classList.toggle('has-value', state.tasks.length > 0);
+  // Re-show suggest button and restart typewriter when all tasks deleted
+  if (state.tasks.length === 0) {
+    const suggestBtn = document.getElementById('btn-suggest-tasks');
+    if (suggestBtn) { suggestBtn.style.opacity = ''; suggestBtn.style.pointerEvents = ''; }
+    startTypewriter();
+  }
   updateSortButton();
   saveState();
 }
@@ -1629,6 +1579,18 @@ function renderDumpCards() {
     cardsEl.appendChild(card);
   });
   updateSortButton();
+  updateDumpOverflow();
+  // Toggle suggest button and typewriter visibility
+  const suggestBtn = document.getElementById('btn-suggest-tasks');
+  const inputWrap = document.querySelector('.dump-input-wrap');
+  if (state.tasks.length > 0) {
+    if (suggestBtn) { suggestBtn.style.opacity = '0'; suggestBtn.style.pointerEvents = 'none'; }
+    if (inputWrap) inputWrap.classList.add('has-value');
+    stopTypewriter();
+  } else {
+    if (suggestBtn) { suggestBtn.style.opacity = ''; suggestBtn.style.pointerEvents = ''; }
+    if (inputWrap) inputWrap.classList.remove('has-value');
+  }
 }
 
 function updateSortButton() {
@@ -1660,6 +1622,7 @@ function transitionToSortUrgency() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 let dragState = null;
+let canvasDragActive = false;
 
 function renderSortList(pass) {
   const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
@@ -1670,6 +1633,9 @@ function renderSortList(pass) {
   order.forEach((id, idx) => {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return;
+
+    const wrap = document.createElement('div');
+    wrap.className = 'sort-card-wrap';
 
     const card = document.createElement('div');
     card.className = 'sort-card';
@@ -1685,16 +1651,120 @@ function renderSortList(pass) {
       <span class="handle" aria-hidden="true">\u2807</span>
     `;
 
-    card.addEventListener('pointerdown', (e) => onSortPointerDown(e, pass));
+    // ── Double-click to edit ──
+    card.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      const textEl = card.querySelector('.card-text');
+      const originalText = textEl.textContent;
+      const taskId = card.dataset.id;
+
+      // Create input
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = originalText;
+      input.className = 'sort-edit-input';
+      input.style.cssText = 'width:100%;border:none;background:transparent;font:inherit;color:inherit;outline:none;padding:0;';
+
+      textEl.textContent = '';
+      textEl.appendChild(input);
+      input.focus();
+      // Place cursor at end instead of selecting all
+      input.setSelectionRange(input.value.length, input.value.length);
+
+      function save() {
+        // Guard against double-fire (blur after Enter)
+        if (!input.parentNode) return;
+        const newText = input.value.trim();
+        if (newText && newText !== originalText) {
+          // Update state
+          const t = state.tasks.find(t => t.id === taskId);
+          if (t) t.text = newText;
+          saveState();
+        }
+        const finalText = newText || originalText;
+        textEl.textContent = finalText;
+        input.remove();
+        // Update aria-label
+        const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
+        const pos = order.indexOf(taskId);
+        card.setAttribute('aria-label', `${finalText}, position ${pos + 1} of ${order.length}`);
+      }
+
+      function cancel() {
+        textEl.textContent = originalText;
+        input.remove();
+      }
+
+      input.addEventListener('keydown', (ev) => {
+        if (ev.key === 'Enter') { ev.preventDefault(); save(); }
+        if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
+        ev.stopPropagation(); // prevent sort keyboard handlers
+      });
+
+      input.addEventListener('blur', save);
+    });
+
+    // ── Drag to reorder (pointerdown → vertical movement) ──
+    card.addEventListener('pointerdown', (e) => {
+      if (card.querySelector('.sort-edit-input')) return;
+      if (e.button !== 0 && e.pointerType !== 'touch') return;
+      onSortPointerDown(e, pass);
+    });
+
     card.addEventListener('keydown', e => onSortKeyDown(e, id, pass));
 
-    listEl.appendChild(card);
+    wrap.appendChild(card);
+    listEl.appendChild(wrap);
   });
 }
 
+let pendingDrag = null;
+const DRAG_MOVE_THRESHOLD = 4; // px before committing to drag
+
 function onSortPointerDown(e, pass) {
-  if (e.button !== 0 && e.pointerType !== 'touch') return;
   const card = e.currentTarget;
+
+  pendingDrag = {
+    card,
+    pass,
+    startY: e.clientY,
+    cardOffsetY: e.clientY - card.getBoundingClientRect().top,
+    pointerId: e.pointerId,
+    committed: false,
+  };
+
+  document.addEventListener('pointermove', onSortPointerMovePending);
+  document.addEventListener('pointerup', onSortPointerUpPending);
+  document.addEventListener('pointercancel', onSortPointerUpPending);
+}
+
+function onSortPointerMovePending(e) {
+  if (!pendingDrag) return;
+  const dy = Math.abs(e.clientY - pendingDrag.startY);
+
+  if (dy >= DRAG_MOVE_THRESHOLD && !pendingDrag.committed) {
+    pendingDrag.committed = true;
+    // Now actually start the drag
+    commitDragStart(pendingDrag, e);
+  }
+
+  if (pendingDrag.committed) {
+    onSortPointerMove(e);
+  }
+}
+
+function onSortPointerUpPending(e) {
+  if (pendingDrag && pendingDrag.committed) {
+    onSortPointerUp(e);
+  }
+  pendingDrag = null;
+  document.removeEventListener('pointermove', onSortPointerMovePending);
+  document.removeEventListener('pointerup', onSortPointerUpPending);
+  document.removeEventListener('pointercancel', onSortPointerUpPending);
+}
+
+function commitDragStart(pending, moveEvent) {
+  const { card, pass, startY, cardOffsetY, pointerId } = pending;
   const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
   const listEl = document.getElementById(listId);
   const cardRect = card.getBoundingClientRect();
@@ -1707,22 +1777,29 @@ function onSortPointerDown(e, pass) {
     initialRects.set(c, c.getBoundingClientRect());
   });
 
-  // Lock body scroll during drag
-  document.body.style.overflow = 'hidden';
-
   dragState = {
     card,
     pass,
     listId,
-    pointerId: e.pointerId,
-    startY: e.clientY,
-    cardOffsetY: e.clientY - cardRect.top,
+    pointerId,
+    startY,
+    cardOffsetY,
     originalIndex: dragIdx,
     currentIndex: dragIdx,
     initialRects,
     cardHeight: cardRect.height,
     gap: 6, // matches CSS gap
   };
+
+  // Create a placeholder to hold the card's space in flow
+  const placeholder = document.createElement('div');
+  placeholder.style.height = cardRect.height + 'px';
+  placeholder.style.flexShrink = '0';
+  placeholder.className = 'sort-placeholder';
+  // Insert placeholder at the list level (before the wrap container if present)
+  const insertTarget = card.closest('.sort-card-wrap') || card;
+  insertTarget.parentNode.insertBefore(placeholder, insertTarget);
+  dragState.placeholder = placeholder;
 
   // Position card as dragging (fixed overlay)
   card.classList.add('dragging');
@@ -1733,15 +1810,13 @@ function onSortPointerDown(e, pass) {
   card.style.zIndex = '1000';
   card.style.pointerEvents = 'none';
 
-  // Set all other cards to their natural positions but with transforms
-  allCards.forEach((c, i) => {
-    if (c === card) return;
-    c.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)';
+  // Set transitions on wrap containers for smooth displacement
+  const allWraps = Array.from(listEl.querySelectorAll('.sort-card-wrap'));
+  const dragWrap = card.closest('.sort-card-wrap');
+  allWraps.forEach(w => {
+    if (w === dragWrap) return;
+    w.style.transition = 'transform 200ms cubic-bezier(0.4, 0, 0.2, 1)';
   });
-
-  document.addEventListener('pointermove', onSortPointerMove);
-  document.addEventListener('pointerup', onSortPointerUp);
-  document.addEventListener('pointercancel', onSortPointerUp);
 }
 
 function onSortPointerMove(e) {
@@ -1752,12 +1827,12 @@ function onSortPointerMove(e) {
 
   // Calculate which index the dragged card would occupy
   const listEl = document.getElementById(listId);
-  const siblings = Array.from(listEl.querySelectorAll('.sort-card:not(.dragging)'));
-  let targetIndex = siblings.length;
+  const dragWrap = card.closest('.sort-card-wrap');
+  const siblingWraps = Array.from(listEl.querySelectorAll('.sort-card-wrap')).filter(w => w !== dragWrap);
+  let targetIndex = siblingWraps.length;
 
-  for (let i = 0; i < siblings.length; i++) {
-    const rect = siblings[i].getBoundingClientRect();
-    // Account for any existing transform
+  for (let i = 0; i < siblingWraps.length; i++) {
+    const rect = siblingWraps[i].getBoundingClientRect();
     const midpoint = rect.top + rect.height / 2;
     if (e.clientY < midpoint) {
       targetIndex = i;
@@ -1765,32 +1840,24 @@ function onSortPointerMove(e) {
     }
   }
 
-  // Adjust for the dragged card's original position
-  // Siblings array doesn't include the dragged card, so indices shift
-  if (targetIndex > originalIndex) {
-    // targetIndex in siblings maps to targetIndex+1 in full list (since dragged card is removed)
-  }
-
   dragState.currentIndex = targetIndex >= originalIndex ? targetIndex + 1 : targetIndex;
 
-  // Apply translateY to displaced cards
-  siblings.forEach((c, sibIdx) => {
+  // Apply translateY to wrap containers (not inner cards — wraps are visible, cards would clip)
+  siblingWraps.forEach((w, sibIdx) => {
     const fullIdx = sibIdx >= originalIndex ? sibIdx + 1 : sibIdx;
     let shift = 0;
 
     if (dragState.currentIndex <= originalIndex) {
-      // Dragged upward: cards between target and original shift down
       if (fullIdx >= dragState.currentIndex && fullIdx < originalIndex) {
         shift = cardHeight + gap;
       }
     } else {
-      // Dragged downward: cards between original and target shift up
       if (fullIdx > originalIndex && fullIdx < dragState.currentIndex) {
         shift = -(cardHeight + gap);
       }
     }
 
-    c.style.transform = shift !== 0 ? `translateY(${shift}px)` : '';
+    w.style.transform = shift !== 0 ? `translateY(${shift}px)` : '';
   });
 }
 
@@ -1798,8 +1865,10 @@ function onSortPointerUp(e) {
   if (!dragState) return;
   const { card, pass, listId, originalIndex, currentIndex } = dragState;
 
-  // Restore body scroll
-  document.body.style.overflow = '';
+  // Remove placeholder
+  if (dragState.placeholder && dragState.placeholder.parentNode) {
+    dragState.placeholder.parentNode.removeChild(dragState.placeholder);
+  }
 
   // Clean up dragged card styles
   card.classList.remove('dragging');
@@ -1812,7 +1881,12 @@ function onSortPointerUp(e) {
 
   const listEl = document.getElementById(listId);
 
-  // Clear transforms on all cards
+  // Clear transforms on all wraps and cards
+  const allWraps = Array.from(listEl.querySelectorAll('.sort-card-wrap'));
+  allWraps.forEach(w => {
+    w.style.transform = '';
+    w.style.transition = '';
+  });
   const allCards = Array.from(listEl.querySelectorAll('.sort-card'));
   allCards.forEach(c => {
     c.style.transform = '';
@@ -1860,15 +1934,14 @@ function onSortPointerUp(e) {
     });
   }
 
-  document.removeEventListener('pointermove', onSortPointerMove);
-  document.removeEventListener('pointerup', onSortPointerUp);
-  document.removeEventListener('pointercancel', onSortPointerUp);
-
   dragState = null;
   saveState();
 }
 
 function onSortKeyDown(e, id, pass) {
+  // Don't handle keys during inline editing
+  if (e.target.classList.contains('sort-edit-input')) return;
+
   const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
   const idx = order.indexOf(id);
   const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
@@ -1898,29 +1971,13 @@ function onSortKeyDown(e, id, pass) {
   }
 }
 
+
 function initSort() {
   // Urgency done
   const btnUrgencyDone = document.getElementById('btn-urgency-done');
   btnUrgencyDone.addEventListener('click', onUrgencyDone);
   btnUrgencyDone.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUrgencyDone(); }
-  });
-
-  // Urgency back
-  const btnUrgencyBack = document.getElementById('btn-urgency-back');
-  btnUrgencyBack.addEventListener('click', () => {
-    showPhase('dump');
-    renderDumpCards();
-    updateSortButton();
-    document.getElementById('dump-input').focus();
-    announce('Back to brain dump. Your tasks are preserved.');
-    saveState();
-  });
-  btnUrgencyBack.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      btnUrgencyBack.click();
-    }
   });
 
   // Importance done
@@ -1930,43 +1987,6 @@ function initSort() {
     if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onImportanceDone(); }
   });
 
-  // Importance back
-  const btnImportanceBack = document.getElementById('btn-importance-back');
-  btnImportanceBack.addEventListener('click', () => {
-    renderSortList('urgency');
-    showPhase('sort-urgency');
-    announce('Back to urgency sorting.');
-    saveState();
-  });
-  btnImportanceBack.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      btnImportanceBack.click();
-    }
-  });
-
-  // Summary bar edit buttons
-  const urgencyEditBtn = document.getElementById('urgency-summary-edit');
-  if (urgencyEditBtn) {
-    urgencyEditBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      renderSortList('urgency');
-      showPhase('sort-urgency');
-      announce('Re-ranking urgency.');
-      saveState();
-    });
-  }
-
-  const importanceEditBtn = document.getElementById('importance-summary-edit');
-  if (importanceEditBtn) {
-    importanceEditBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      renderSortList('importance');
-      showPhase('sort-importance');
-      announce('Re-ranking importance.');
-      saveState();
-    });
-  }
 }
 
 function onUrgencyDone() {
@@ -2584,9 +2604,8 @@ function setupLongPressDrag(card, id) {
     pressTimer = setTimeout(() => {
       if (!moved) {
         isDragging = true;
+        canvasDragActive = true;
         card.classList.add('grabbing');
-        // Lock scroll during canvas drag
-        document.body.style.overflow = 'hidden';
 
         if (e.pointerId !== undefined) card.setPointerCapture(e.pointerId);
 
@@ -2645,9 +2664,6 @@ function setupLongPressDrag(card, id) {
 
     if (!isDragging) return;
 
-    // Restore scroll
-    document.body.style.overflow = '';
-
     const clientX = e.touches ? (e.changedTouches[0]?.clientX ?? startX) : e.clientX;
     const clientY = e.touches ? (e.changedTouches[0]?.clientY ?? startY) : e.clientY;
     const dx = clientX - startX;
@@ -2655,6 +2671,7 @@ function setupLongPressDrag(card, id) {
     const dist = Math.sqrt(dx * dx + dy * dy);
 
     isDragging = false;
+    canvasDragActive = false;
     card.classList.remove('grabbing');
     card.style.zIndex = '';
 
@@ -2766,7 +2783,6 @@ function doStartFresh() {
 
   updateSortButton();
   showPhase('dump');
-  window.scrollTo({ top: 0, behavior: 'smooth' });
   document.getElementById('dump-input').focus();
   announce('Starting fresh. Add your tasks.');
 }
@@ -2821,30 +2837,60 @@ const IMPORTANCE_TIPS = [
 
 let urgencyTipIdx = 0;
 let importanceTipIdx = 0;
+let urgencyTipTimer = null;
+let importanceTipTimer = null;
+
+function rotateTip(textEl, tips, idxKey, timerKey) {
+  // Slide out current
+  textEl.style.animation = 'tipSlideOut 300ms ease forwards';
+  setTimeout(() => {
+    // Update text and slide in
+    if (idxKey === 'urgency') {
+      urgencyTipIdx = (urgencyTipIdx + 1) % tips.length;
+      textEl.textContent = tips[urgencyTipIdx];
+    } else {
+      importanceTipIdx = (importanceTipIdx + 1) % tips.length;
+      textEl.textContent = tips[importanceTipIdx];
+    }
+    textEl.style.animation = '';
+    // Force reflow to restart animation
+    textEl.offsetHeight;
+    textEl.style.animation = 'tipSlideUp 600ms ease forwards';
+
+    // Schedule next rotation
+    const timer = setTimeout(() => rotateTip(textEl, tips, idxKey, timerKey), 6000);
+    if (idxKey === 'urgency') urgencyTipTimer = timer;
+    else importanceTipTimer = timer;
+  }, 300);
+}
+
+function startTipRotation(containerId, tips, idxKey) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  const textEl = container.querySelector('.sort-tip-text');
+  if (!textEl) return;
+
+  // Show first tip
+  const idx = idxKey === 'urgency' ? urgencyTipIdx : importanceTipIdx;
+  textEl.textContent = tips[idx];
+  textEl.style.animation = 'tipSlideUp 600ms ease forwards';
+
+  // Start rotation after 5 seconds
+  const timer = setTimeout(() => rotateTip(textEl, tips, idxKey), 5000);
+  if (idxKey === 'urgency') urgencyTipTimer = timer;
+  else importanceTipTimer = timer;
+}
+
+function stopTipRotation() {
+  clearTimeout(urgencyTipTimer);
+  clearTimeout(importanceTipTimer);
+  urgencyTipTimer = null;
+  importanceTipTimer = null;
+}
 
 function initSortTips() {
-  const urgencyTip = document.getElementById('sort-tip-urgency');
-  const importanceTip = document.getElementById('sort-tip-importance');
-
-  if (urgencyTip) {
-    const textEl = urgencyTip.querySelector('.sort-tip-text');
-    const nextBtn = urgencyTip.querySelector('.sort-tip-next');
-    textEl.textContent = URGENCY_TIPS[0];
-    nextBtn.addEventListener('click', () => {
-      urgencyTipIdx = (urgencyTipIdx + 1) % URGENCY_TIPS.length;
-      textEl.textContent = URGENCY_TIPS[urgencyTipIdx];
-    });
-  }
-
-  if (importanceTip) {
-    const textEl = importanceTip.querySelector('.sort-tip-text');
-    const nextBtn = importanceTip.querySelector('.sort-tip-next');
-    textEl.textContent = IMPORTANCE_TIPS[0];
-    nextBtn.addEventListener('click', () => {
-      importanceTipIdx = (importanceTipIdx + 1) % IMPORTANCE_TIPS.length;
-      textEl.textContent = IMPORTANCE_TIPS[importanceTipIdx];
-    });
-  }
+  startTipRotation('sort-tip-urgency', URGENCY_TIPS, 'urgency');
+  startTipRotation('sort-tip-importance', IMPORTANCE_TIPS, 'importance');
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2871,66 +2917,428 @@ function initMapGuide() {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Fix 5: Position fake cursor to left of placeholder
+// Typewriter animation for dump input
 // ──────────────────────────────────────────────────────────────────────────────
 
-function positionFakeCursor() {
+const TYPEWRITER_TEXTS = [
+  "finish the quarterly report",
+  "call back Dr. Chen",
+  "start exercising regularly",
+  "reply to the group chat",
+  "research school options",
+];
+
+let typewriterTimeouts = [];
+let typewriterIdx = 0;
+let typewriterRunning = false;
+
+function stopTypewriter() {
+  typewriterTimeouts.forEach(id => clearTimeout(id));
+  typewriterTimeouts = [];
+  typewriterRunning = false;
+  const wrap = document.querySelector('.dump-input-wrap');
+  if (wrap) wrap.classList.remove('typewriter-active');
+}
+
+function startTypewriter() {
+  if (typewriterRunning) return;
+  const el = document.getElementById('typewriter');
+  const wrap = document.querySelector('.dump-input-wrap');
+  if (!el) return;
+  el.textContent = '';
+  typewriterRunning = true;
+  if (wrap) wrap.classList.add('typewriter-active');
+  cycleTypewriter();
+}
+
+function cycleTypewriter() {
+  if (!typewriterRunning) return;
+  const el = document.getElementById('typewriter');
+  if (!el) return;
+  const text = TYPEWRITER_TEXTS[typewriterIdx % TYPEWRITER_TEXTS.length];
+  typeText(text, () => {
+    if (!typewriterRunning) return;
+    deleteText(() => {
+      if (!typewriterRunning) return;
+      typewriterIdx++;
+      cycleTypewriter();
+    });
+  });
+}
+
+function typeText(text, callback) {
+  const el = document.getElementById('typewriter');
+  if (!el) return;
+  let i = 0;
+  el.textContent = '';
+  function step() {
+    if (!typewriterRunning) return;
+    el.textContent = text.slice(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      const tid = setTimeout(callback, 2000);
+      typewriterTimeouts.push(tid);
+    } else {
+      const tid = setTimeout(step, 60);
+      typewriterTimeouts.push(tid);
+    }
+  }
+  step();
+}
+
+function deleteText(callback) {
+  const el = document.getElementById('typewriter');
+  if (!el) return;
+  let i = el.textContent.length;
+  function step() {
+    if (!typewriterRunning) return;
+    i--;
+    el.textContent = el.textContent.slice(0, i);
+    if (i <= 0) {
+      const tid = setTimeout(callback, 500);
+      typewriterTimeouts.push(tid);
+    } else {
+      const tid = setTimeout(step, 30);
+      typewriterTimeouts.push(tid);
+    }
+  }
+  step();
+}
+
+function initTypewriter() {
+  const el = document.getElementById('typewriter');
   const input = document.getElementById('dump-input');
-  const cursor = document.querySelector('.fake-cursor');
-  if (!cursor || !input) return;
-  const measurer = document.createElement('span');
-  measurer.style.font = getComputedStyle(input).font;
-  measurer.style.position = 'absolute';
-  measurer.style.visibility = 'hidden';
-  measurer.textContent = input.placeholder;
-  document.body.appendChild(measurer);
-  const textWidth = measurer.offsetWidth;
-  document.body.removeChild(measurer);
-  const inputWidth = input.offsetWidth;
-  const startX = (inputWidth - textWidth) / 2;
-  cursor.style.left = (startX - 12) + 'px';
+  if (!el || !input) return;
+
+  // Click typewriter to focus input
+  el.addEventListener('click', () => {
+    input.focus();
+  });
+
+  // Only start if input is not focused, empty, and no tasks exist
+  if (document.activeElement !== input && !input.value && state.tasks.length === 0) {
+    startTypewriter();
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Fix 2: Scroll-triggered phase transitions
+// Dump cards overflow fade
 // ──────────────────────────────────────────────────────────────────────────────
 
-function initScrollObserver() {
-  if (!('IntersectionObserver' in window)) return;
+function updateDumpOverflow() {
+  const cards = document.getElementById('dump-cards');
+  if (!cards) return;
+  cards.classList.toggle('has-overflow', cards.scrollHeight > cards.clientHeight + 10);
+}
 
-  const observer = new IntersectionObserver((entries) => {
-    entries.forEach(entry => {
-      if (!entry.isIntersecting) return;
-      const el = entry.target;
-      const phase = Object.keys(PHASE_IDS).find(k => PHASE_IDS[k] === el.id);
-      if (!phase) return;
-      const phaseIdx = PHASE_ORDER.indexOf(phase);
-      const currentIdx = PHASE_ORDER.indexOf(state.phase);
+// ──────────────────────────────────────────────────────────────────────────────
+// Fullpage snap/slide navigation
+// ──────────────────────────────────────────────────────────────────────────────
 
-      // Only auto-activate if this is the next phase and previous is completed
-      if (phaseIdx === currentIdx + 1) {
-        // Check if the previous phase has been "completed" (has tasks, etc.)
-        const prevPhase = PHASE_ORDER[currentIdx];
-        if (prevPhase === 'dump' && state.tasks.length > 0) {
-          // Don't auto-transition from dump — user must click "ready to sort"
-        } else if (prevPhase === 'sort-urgency' || prevPhase === 'sort-importance') {
-          // Don't auto-transition from sort — user must click "done sorting"
+let overscrollAccumulator = 0;
+let bouncingBack = false;
+let isTransitioning = false;
+const OVERSCROLL_THRESHOLD = 120;
+const MAX_VISUAL_PULL = 250;
+
+function updateOverscrollVisual(activePhase, direction, noIndicator) {
+  // Rubber band: 1:1 movement up to ~60% of max, then decelerating
+  const raw = overscrollAccumulator;
+  const visualOffset = Math.min(raw * (1 - raw / (2 * MAX_VISUAL_PULL * 2)), MAX_VISUAL_PULL);
+
+  // No transition during active pull — instant response
+  activePhase.style.transition = 'none';
+  if (direction === 'down') {
+    activePhase.style.transform = `translateY(${-visualOffset}px)`;
+  } else {
+    activePhase.style.transform = `translateY(${visualOffset}px)`;
+  }
+
+  // No button animation on first/last page — just the rubber band feel
+  if (noIndicator) return;
+
+  // Find the nav button in the active phase
+  const navBtn = activePhase.querySelector('.phase-nav-btn');
+  if (navBtn) {
+    const progress = overscrollAccumulator / OVERSCROLL_THRESHOLD;
+    if (direction === 'down' && progress > 0.2) {
+      // Button scales up and brightens as you pull
+      const scale = 1 + Math.min(progress, 1) * 0.15; // max 1.15x
+      const opacity = 0.7 + Math.min(progress, 1) * 0.3; // 0.7 → 1.0
+      navBtn.style.transition = 'none';
+      navBtn.style.transform = `translateX(-50%) scale(${scale})`;
+      navBtn.style.opacity = opacity;
+      // Arrow bounces down slightly
+      const arrow = navBtn.querySelector('.nav-arrow');
+      if (arrow) {
+        arrow.style.transition = 'none';
+        arrow.style.transform = `translateY(${Math.min(progress, 1) * 6}px)`;
+      }
+      // At commit point, change color
+      if (progress >= 1) {
+        navBtn.style.color = 'var(--sage)';
+      } else {
+        navBtn.style.color = '';
+      }
+    }
+  }
+}
+
+function resetOverscroll(activePhase) {
+  if (overscrollAccumulator > 0) {
+    bouncingBack = true;
+    activePhase.style.transition = 'transform 180ms cubic-bezier(0.2, 0.9, 0.3, 1.05)';
+    activePhase.style.transform = 'translateY(0)';
+    setTimeout(() => {
+      activePhase.style.transition = '';
+      activePhase.style.transform = '';
+    }, 190);
+    // Block all scroll events for 800ms to absorb trackpad inertia
+    setTimeout(() => {
+      bouncingBack = false;
+    }, 800);
+  }
+  overscrollAccumulator = 0;
+  // Reset nav button styles
+  const navBtn = activePhase.querySelector('.phase-nav-btn');
+  if (navBtn) {
+    navBtn.style.transition = 'transform 200ms ease, opacity 200ms ease, color 200ms ease';
+    navBtn.style.transform = 'translateX(-50%)';
+    navBtn.style.opacity = '';
+    navBtn.style.color = '';
+    const arrow = navBtn.querySelector('.nav-arrow');
+    if (arrow) {
+      arrow.style.transition = 'transform 200ms ease';
+      arrow.style.transform = '';
+    }
+  }
+}
+
+function resetOverscrollTransform(activePhase) {
+  activePhase.style.transform = '';
+  // Reset nav button styles
+  const navBtn = activePhase.querySelector('.phase-nav-btn');
+  if (navBtn) {
+    navBtn.style.transition = 'transform 200ms ease, opacity 200ms ease, color 200ms ease';
+    navBtn.style.transform = 'translateX(-50%)';
+    navBtn.style.opacity = '';
+    navBtn.style.color = '';
+    const arrow = navBtn.querySelector('.nav-arrow');
+    if (arrow) {
+      arrow.style.transition = 'transform 200ms ease';
+      arrow.style.transform = '';
+    }
+  }
+}
+
+function hideOverscrollIndicator() {
+  // no-op — overscroll indicator removed
+}
+
+function goToNextPhase() {
+  const currentPhase = state.phase;
+  // Gate: check if current phase is ready to advance
+  if (currentPhase === 'dump' && state.tasks.length === 0) return;
+  if (currentPhase === 'scatter') return; // last phase
+
+  isTransitioning = true;
+
+  if (currentPhase === 'dump') transitionToSortUrgency();
+  else if (currentPhase === 'sort-urgency') onUrgencyDone();
+  else if (currentPhase === 'sort-importance') onImportanceDone();
+
+  setTimeout(() => { isTransitioning = false; }, 450);
+}
+
+function goToPrevPhase() {
+  const currentPhase = state.phase;
+  if (currentPhase === 'dump') return; // first phase
+
+  isTransitioning = true;
+
+  if (currentPhase === 'sort-urgency') {
+    showPhase('dump');
+    renderDumpCards();
+    updateSortButton();
+  } else if (currentPhase === 'sort-importance') {
+    renderSortList('urgency');
+    showPhase('sort-urgency');
+  } else if (currentPhase === 'scatter') {
+    renderSortList('importance');
+    showPhase('sort-importance');
+  }
+
+  setTimeout(() => { isTransitioning = false; }, 450);
+}
+
+function initPageScroll() {
+  const container = document.querySelector('.flow-container');
+
+  // ── Wheel overscroll detection ──
+  let wheelIdleTimer = null;
+  let lastWheelDirection = null;
+  // bouncingBack is declared globally alongside resetOverscroll
+
+  container.addEventListener('wheel', (e) => {
+    if (isTransitioning) { e.preventDefault(); return; }
+    if (bouncingBack) { e.preventDefault(); return; }
+    if (dragState || canvasDragActive) { return; }
+
+    const activePhase = document.querySelector('.phase-active');
+    if (!activePhase) return;
+
+    // If cursor is over a scrollable child, never trigger page overscroll
+    const scrollableChild = e.target.closest('.dump-cards, .sort-list');
+    if (scrollableChild) {
+      // Let the child scroll naturally — block page overscroll entirely
+      return;
+    }
+
+    const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
+    const isAtTop = activePhase.scrollTop <= 5;
+
+    if (e.deltaY > 0 && isAtBottom) {
+      e.preventDefault();
+      if (state.phase === 'scatter') {
+        // Last page — no overscroll at all
+        return;
+      } else {
+        overscrollAccumulator = Math.min(overscrollAccumulator + e.deltaY, OVERSCROLL_THRESHOLD * 2);
+        lastWheelDirection = 'down';
+        updateOverscrollVisual(activePhase, 'down');
+      }
+
+      clearTimeout(wheelIdleTimer);
+      if (overscrollAccumulator >= OVERSCROLL_THRESHOLD && state.phase !== 'scatter') {
+        // Past threshold — snap immediately
+        wheelIdleTimer = setTimeout(() => {
+          hideOverscrollIndicator();
+          resetOverscrollTransform(activePhase);
+          overscrollAccumulator = 0;
+          goToNextPhase();
+        }, 16);
+      } else {
+        // Under threshold or last page — bounce back after settling
+        wheelIdleTimer = setTimeout(() => {
+          resetOverscroll(activePhase);
+        }, 1000);
+      }
+
+    } else if (e.deltaY < 0 && isAtTop) {
+      e.preventDefault();
+      if (state.phase === 'dump') {
+        const wasCapped = overscrollAccumulator >= OVERSCROLL_THRESHOLD * 0.4 - 1;
+        overscrollAccumulator = Math.min(overscrollAccumulator + Math.abs(e.deltaY), OVERSCROLL_THRESHOLD * 0.4);
+        updateOverscrollVisual(activePhase, 'up', true);
+        // Only set timer if not already capped — once capped, let existing timer run
+        if (!wasCapped) {
+          clearTimeout(wheelIdleTimer);
+          wheelIdleTimer = setTimeout(() => {
+            resetOverscroll(activePhase);
+          }, 200);
+        }
+      } else {
+        overscrollAccumulator = Math.min(overscrollAccumulator + Math.abs(e.deltaY), OVERSCROLL_THRESHOLD * 2);
+        lastWheelDirection = 'up';
+        updateOverscrollVisual(activePhase, 'up');
+
+        clearTimeout(wheelIdleTimer);
+        if (overscrollAccumulator >= OVERSCROLL_THRESHOLD) {
+          wheelIdleTimer = setTimeout(() => {
+            hideOverscrollIndicator();
+            resetOverscrollTransform(activePhase);
+            overscrollAccumulator = 0;
+            goToPrevPhase();
+          }, 16);
+        } else {
+          wheelIdleTimer = setTimeout(() => {
+            resetOverscroll(activePhase);
+          }, 1000);
         }
       }
 
-      // If scrolling back up to a completed phase, expand it temporarily
-      if (phaseIdx < currentIdx && el.classList.contains('phase-completed')) {
-        // Allow click on summary bar to expand (already handled)
-      }
-    });
-  }, {
-    threshold: 0.3
+    } else {
+      clearTimeout(wheelIdleTimer);
+      resetOverscroll(activePhase);
+    }
+  }, { passive: false });
+
+  // Reset accumulator on pointer interaction
+  container.addEventListener('pointerdown', () => {
+    if (!dragState) {
+      overscrollAccumulator = 0;
+      hideOverscrollIndicator();
+    }
   });
 
-  PHASE_ORDER.forEach(phase => {
-    const el = document.getElementById(PHASE_IDS[phase]);
-    if (el) observer.observe(el);
-  });
+  // ── Touch overscroll detection ──
+  let touchStartY = 0;
+  let touchAccumulator = 0;
+  let touchDirection = null;
+
+  container.addEventListener('touchstart', (e) => {
+    touchStartY = e.touches[0].clientY;
+    touchAccumulator = 0;
+    touchDirection = null;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', (e) => {
+    if (isTransitioning) return;
+    if (dragState || canvasDragActive) return; // don't interfere with sort or canvas drag
+
+    const activePhase = document.querySelector('.phase-active');
+    if (!activePhase) return;
+
+    const deltaY = touchStartY - e.touches[0].clientY; // positive = swiping up (scroll down)
+    const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
+    const isAtTop = activePhase.scrollTop <= 5;
+
+    if (deltaY > 0 && isAtBottom) {
+      e.preventDefault();
+      if (state.phase === 'scatter') {
+        // Last page — no overscroll
+        return;
+      } else {
+        touchAccumulator = deltaY;
+        touchDirection = 'down';
+        overscrollAccumulator = touchAccumulator;
+        updateOverscrollVisual(activePhase, 'down');
+      }
+    } else if (deltaY < 0 && isAtTop) {
+      e.preventDefault();
+      if (state.phase === 'dump') {
+        touchAccumulator = Math.min(Math.abs(deltaY), OVERSCROLL_THRESHOLD * 0.4);
+        overscrollAccumulator = touchAccumulator;
+        updateOverscrollVisual(activePhase, 'up', true);
+      } else {
+        touchAccumulator = Math.abs(deltaY);
+        touchDirection = 'up';
+        overscrollAccumulator = touchAccumulator;
+        updateOverscrollVisual(activePhase, 'up');
+      }
+    } else {
+      touchAccumulator = 0;
+      touchDirection = null;
+      resetOverscroll(activePhase);
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', () => {
+    const activePhase = document.querySelector('.phase-active');
+    if (!activePhase) return;
+
+    if (overscrollAccumulator >= OVERSCROLL_THRESHOLD) {
+      hideOverscrollIndicator();
+      resetOverscrollTransform(activePhase);
+      if (touchDirection === 'down') goToNextPhase();
+      else if (touchDirection === 'up') goToPrevPhase();
+    } else {
+      resetOverscroll(activePhase);
+    }
+    touchAccumulator = 0;
+    touchDirection = null;
+    overscrollAccumulator = 0;
+  }, { passive: true });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2944,7 +3352,7 @@ function init() {
   initDump();
   initSortTips();
   initMapGuide();
-  initScrollObserver();
+  initPageScroll();
 
   const savedPhase = loadSavedState();
 
@@ -2983,6 +3391,15 @@ function init() {
 }
 
 init();
+
+// Ensure typewriter starts on fresh load after everything is initialized
+document.fonts.ready.then(() => {
+  if (state.tasks.length === 0 && state.phase === 'dump') {
+    const wrap = document.querySelector('.dump-input-wrap');
+    if (wrap) wrap.classList.remove('has-value');
+    startTypewriter();
+  }
+});
 </script>
 </body>
 </html>
