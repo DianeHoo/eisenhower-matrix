@@ -53,6 +53,7 @@ html, body {
 /* ── Vertical flow container ── */
 .flow-container {
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
   position: relative;
 }
@@ -460,7 +461,7 @@ html, body {
   flex-shrink: 0;
   min-height: 40px;
   user-select: none;
-  touch-action: none;
+  touch-action: manipulation;
   transition: box-shadow 150ms ease, transform 200ms cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
 }
@@ -689,7 +690,7 @@ html, body {
   color: var(--text);
   cursor: pointer;
   user-select: none;
-  touch-action: none;
+  touch-action: manipulation;
   white-space: normal;
   word-break: break-word;
   max-width: 200px;
@@ -1157,6 +1158,66 @@ button:focus-visible {
 }
 
 /* (reduced-motion for scroll behavior removed — viewport is locked) */
+
+/* ── Mobile: touch devices ── */
+@media (pointer: coarse) {
+  .dump-card .dump-delete {
+    opacity: 0.35;
+  }
+  .dump-card .dump-delete:active {
+    opacity: 1;
+    color: var(--sage);
+  }
+  .phase-nav-btn:active { color: var(--sage); }
+  .phase-nav-btn:active .nav-arrow { transform: translateY(2px); }
+  .corner-label:active { color: var(--sage); }
+  #btn-suggest-tasks:active { color: var(--sage); }
+  .canvas-add-btn:active { color: var(--sage); box-shadow: 0 4px 12px rgba(46,52,45,0.18); }
+  #btn-start-fresh:active { color: var(--sage); }
+  .map-guide-toggle:active { color: var(--sage); }
+  .map-guide-close:active { color: var(--sage); }
+  .corner-label { padding: 12px 16px; }
+  .corner-label.now { top: 20px; right: 20px; }
+  .corner-label.soon { top: 20px; left: 20px; }
+  .corner-label.quick { bottom: 44px; right: 20px; }
+  .corner-label.later { bottom: 44px; left: 20px; }
+  .dump-card .dump-delete { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+  .sort-card .handle { padding: 15px; margin: -15px; }
+  .phase-nav-btn { padding: 14px 24px; }
+  .keyboard-open .phase-nav-btn {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 150ms ease;
+  }
+  .keyboard-open .canvas-add-wrap {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+/* ── Mobile: narrow screens ── */
+@media (max-width: 480px) {
+  .dump-inner { width: min(600px, 100% - 32px); }
+  .sort-inner > .sort-progress,
+  .sort-inner > .sort-header,
+  .sort-inner > .sort-list,
+  .sort-inner > .sort-tip,
+  .sort-inner > .sort-footer { width: min(520px, 100% - 32px); }
+  #dump-input { font-size: 20px; }
+  .sort-header { font-size: 16px !important; }
+  .canvas-card { max-width: 160px; }
+  .corner-label { font-size: 12px; padding: 8px 10px; }
+  .corner-label.now, .corner-label.soon { top: 8px; }
+  .corner-label.quick, .corner-label.later { bottom: 28px; }
+  .corner-label.now, .corner-label.quick { right: 8px; }
+  .corner-label.soon, .corner-label.later { left: 8px; }
+  .corner-hint { display: none; }
+  .axis-label { font-size: 9px; }
+  .axis-urgent { right: 8px; top: calc(50% + 6px); }
+  .axis-important { top: 6px; }
+  .dump-cards { gap: 4px; }
+  .sort-list { gap: 4px; }
+}
 </style>
 </head>
 <body>
@@ -1707,6 +1768,20 @@ function renderSortList(pass) {
       input.addEventListener('blur', save);
     });
 
+    // Double-tap fallback for mobile
+    let lastTapTime = 0;
+    card.addEventListener('pointerup', (e) => {
+      if (card._suppressNextClick) return;
+      if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        card.dispatchEvent(new Event('dblclick', { bubbles: true }));
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+      }
+    });
+
     // ── Drag to reorder ──
     // On touch: only the handle initiates drag (so card body scrolls the page)
     // On mouse: anywhere on the card initiates drag
@@ -2235,6 +2310,20 @@ function buildCanvasCards(rm) {
       textEl.addEventListener('blur', save, { once: true });
     });
 
+    // Double-tap fallback for mobile
+    let lastTapTime = 0;
+    card.addEventListener('pointerup', (e) => {
+      if (card._suppressNextClick) return;
+      if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
+      const now = Date.now();
+      if (now - lastTapTime < 300) {
+        card.dispatchEvent(new Event('dblclick', { bubbles: true }));
+        lastTapTime = 0;
+      } else {
+        lastTapTime = now;
+      }
+    });
+
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -2672,6 +2761,19 @@ function addTaskToCanvas(text) {
     textEl.addEventListener('blur', save, { once: true });
   });
 
+  // Double-tap fallback for mobile
+  let lastTapTime = 0;
+  card.addEventListener('pointerup', (e) => {
+    if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
+    const now = Date.now();
+    if (now - lastTapTime < 300) {
+      card.dispatchEvent(new Event('dblclick', { bubbles: true }));
+      lastTapTime = 0;
+    } else {
+      lastTapTime = now;
+    }
+  });
+
   card.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -2749,6 +2851,7 @@ function setupLongPressDrag(card, id) {
       if (!moved) {
         isDragging = true;
         canvasDragActive = true;
+        card._suppressNextClick = true;
         card.classList.add('grabbing');
 
         if (e.pointerId !== undefined) card.setPointerCapture(e.pointerId);
@@ -2775,6 +2878,7 @@ function setupLongPressDrag(card, id) {
       clearTimeout(pressTimer);
       pressTimer = null;
       moved = true;
+      card._suppressNextClick = true;
     }
 
     if (!isDragging) return;
@@ -3533,6 +3637,14 @@ function init() {
   } else {
     showPhase('dump');
     // Don't auto-focus — let the typewriter animation play
+  }
+
+  // Detect virtual keyboard on mobile
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', () => {
+      const keyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
+      document.body.classList.toggle('keyboard-open', keyboardOpen);
+    });
   }
 }
 
