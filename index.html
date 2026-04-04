@@ -493,6 +493,9 @@ html, body {
   font-size: 14px;
   line-height: 1;
   cursor: grab;
+  padding: 8px;
+  margin: -8px;
+  touch-action: none;
 }
 
 .sort-card .card-text {
@@ -526,13 +529,28 @@ html, body {
   overflow: hidden;
 }
 
-/* SVG quadrant lines — Phase 1.2: stroke uses --sage-20 */
+/* Dot grid — fades at edges via mask, doesn't affect cards/labels */
+.scatter-canvas::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, rgba(82, 99, 71, 0.15) 1px, transparent 1px);
+  background-size: 20px 20px;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 80%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* SVG quadrant lines — also fade at edges */
 .quadrant-svg {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   pointer-events: none;
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 80%);
+  mask-image: radial-gradient(ellipse 70% 70% at center, black 40%, transparent 80%);
 }
 
 .q-line {
@@ -560,54 +578,72 @@ html, body {
   position: absolute;
   font-family: var(--font-display);
   color: var(--sage-label);
-  pointer-events: none;
   letter-spacing: 0.04em;
-  font-weight: 500;
+  font-weight: 600;
   white-space: nowrap;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  font-size: 14px;
+  z-index: 5;
+}
+.corner-label:hover {
+  color: var(--sage);
 }
 .corner-label.now {
-  font-size: 10px;
-  font-weight: 600;
   color: var(--sage-interactive);
-  top: 12px;
-  right: 16px;
+  top: 32px;
+  right: 32px;
 }
 .corner-label.soon {
-  font-size: 9px;
-  top: 12px;
-  left: 16px;
+  top: 32px;
+  left: 32px;
 }
 .corner-label.quick {
-  font-size: 9px;
-  bottom: 38px;
-  right: 16px;
+  bottom: 56px;
+  right: 32px;
 }
 .corner-label.later {
-  font-size: 9px;
-  bottom: 38px;
-  left: 16px;
+  bottom: 56px;
+  left: 32px;
 }
 
-/* Axis labels */
+/* Quadrant hints — below their label */
+.corner-hint {
+  position: absolute;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: rgba(46, 52, 45, 0.35);
+  pointer-events: none;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  z-index: 5;
+}
+.corner-hint.now { top: 52px; right: 32px; }
+.corner-hint.soon { top: 52px; left: 32px; }
+.corner-hint.quick { bottom: 40px; right: 32px; }
+.corner-hint.later { bottom: 40px; left: 32px; }
+
+/* Axis labels — away from corners */
 .axis-label {
   position: absolute;
   font-family: var(--font-display);
-  font-size: 9px;
-  letter-spacing: 0.12em;
+  font-size: 11px;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--sage-label);
   pointer-events: none;
+  z-index: 5;
 }
 .axis-urgent {
-  bottom: 34px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(50% + 12px);
+  right: 32px;
 }
 .axis-important {
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%) rotate(-90deg);
-  transform-origin: center center;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
 }
 
 /* Quadrant regions for accessibility */
@@ -616,20 +652,30 @@ html, body {
   pointer-events: none;
 }
 
-/* Quadrant hints */
-.corner-hint {
+/* Corner popovers */
+.corner-popover {
   position: absolute;
+  background: var(--sage-08);
+  border-radius: 8px;
+  padding: 10px 14px;
   font-family: var(--font-body);
-  font-size: 8px;
-  color: rgba(46, 52, 45, 0.22);
+  font-size: 12px;
+  color: var(--text);
+  line-height: 1.5;
+  max-width: 240px;
+  opacity: 0;
   pointer-events: none;
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  transition: opacity 200ms ease;
+  z-index: 50;
 }
-.corner-hint.now { top: 25px; right: 16px; }
-.corner-hint.soon { top: 25px; left: 16px; }
-.corner-hint.quick { bottom: 26px; right: 16px; }
-.corner-hint.later { bottom: 26px; left: 16px; }
+.corner-popover.open {
+  opacity: 1;
+  pointer-events: all;
+}
+.now-popover { top: 68px; right: 32px; }
+.soon-popover { top: 68px; left: 32px; }
+.quick-popover { bottom: 72px; right: 32px; }
+.later-popover { bottom: 72px; left: 32px; }
 
 /* Canvas cards */
 .canvas-card {
@@ -653,27 +699,10 @@ html, body {
 
 @media (hover: hover) {
   .canvas-card:hover {
-    background: rgba(250, 250, 245, 0.85);
+    background: #fafaf5;
     box-shadow: 0 2px 8px rgba(46, 52, 45, 0.10);
     cursor: grab;
   }
-  .canvas-card:hover .drag-hint {
-    opacity: 1;
-  }
-}
-
-.drag-hint {
-  position: absolute;
-  top: 50%;
-  right: 8px;
-  transform: translateY(-50%);
-  font-size: 10px;
-  color: var(--sage-label);
-  opacity: 0;
-  transition: opacity 150ms ease;
-  pointer-events: none;
-  line-height: 1;
-  letter-spacing: 0.5px;
 }
 
 .canvas-card:focus-visible {
@@ -685,34 +714,6 @@ html, body {
   box-shadow: var(--card-shadow-lift);
   z-index: 100;
   cursor: grabbing;
-}
-
-/* Drag tooltip */
-.drag-tooltip {
-  position: absolute;
-  bottom: calc(100% + 6px);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--text);
-  color: #fff;
-  font-family: var(--font-body);
-  font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 200ms ease;
-  z-index: 200;
-}
-.drag-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 4px solid transparent;
-  border-top-color: var(--text);
 }
 
 /* Strikethrough overlay — sharpie-drawn SVG */
@@ -742,6 +743,11 @@ html, body {
 }
 
 .canvas-card.done .card-text {
+  opacity: 0.35;
+  transition: opacity 300ms ease;
+}
+
+.canvas-card.done .card-strike .strike-path {
   opacity: 0.35;
   transition: opacity 300ms ease;
 }
@@ -1092,10 +1098,6 @@ button:focus-visible {
 
 /* Map guide */
 .map-guide-toggle {
-  position: absolute;
-  bottom: 34px;
-  left: 16px;
-  z-index: 50;
   background: none;
   border: none;
   font-family: var(--font-display);
@@ -1109,19 +1111,16 @@ button:focus-visible {
 }
 .map-guide-toggle:hover { color: var(--sage); }
 .map-guide-content {
-  position: absolute;
-  bottom: 56px;
-  left: 16px;
-  z-index: 50;
   background: var(--sage-08);
   border-radius: var(--radius);
-  padding: 16px 20px;
+  padding: 0 20px;
   max-width: 320px;
   max-height: 0;
   overflow: hidden;
   opacity: 0;
   transition: max-height 300ms ease, opacity 200ms ease, padding 300ms ease;
   pointer-events: none;
+  margin-top: 4px;
 }
 .map-guide-content.open {
   max-height: 300px;
@@ -1191,6 +1190,14 @@ Write out everything — don't sort yet, don't judge. Just get it out.</p>
       <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
       <div class="dump-footer">
         <button id="btn-suggest-tasks" aria-label="Suggest example tasks">suggest tasks</button>
+      </div>
+
+      <!-- Map guide -->
+      <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
+      <div class="map-guide-content" id="map-guide-content">
+        <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
+        <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
+        <button class="map-guide-close" id="map-guide-close">got it</button>
       </div>
     </div>
     <button class="phase-nav-btn" id="btn-ready-sort" aria-label="Ready to sort your tasks">
@@ -1265,10 +1272,14 @@ Most important at the top.</h2>
       <div class="quadrant-region" id="q-quick" style="bottom:0;right:0;width:50%;height:50%;" role="region" aria-label="Quick — urgent, not important"></div>
       <div class="quadrant-region" id="q-later" style="bottom:0;left:0;width:50%;height:50%;" role="region" aria-label="Later — not urgent, not important"></div>
 
-      <span class="corner-label now" aria-hidden="true">Now</span>
-      <span class="corner-label soon" aria-hidden="true">Soon</span>
-      <span class="corner-label quick" aria-hidden="true">Quick</span>
-      <span class="corner-label later" aria-hidden="true">Later</span>
+      <button class="corner-label now" aria-label="Now — urgent and important">Now</button>
+      <div class="corner-popover now-popover" aria-hidden="true">These need your attention today. Crises, hard deadlines, urgent problems. Do them first, then move on.</div>
+      <button class="corner-label soon" aria-label="Soon — important, not urgent">Soon</button>
+      <div class="corner-popover soon-popover" aria-hidden="true">Important but not pressing. Schedule time for these — they build the life you actually want.</div>
+      <button class="corner-label quick" aria-label="Quick — urgent, not important">Quick</button>
+      <div class="corner-popover quick-popover" aria-hidden="true">Feels urgent but isn't meaningful. Do them fast without overthinking, delegate, or batch them.</div>
+      <button class="corner-label later" aria-label="Later — not urgent, not important">Later</button>
+      <div class="corner-popover later-popover" aria-hidden="true">Neither urgent nor important. Reconsider whether these belong on your list at all, or let them go.</div>
 
       <span class="corner-hint now" aria-hidden="true">crises &amp; deadlines</span>
       <span class="corner-hint soon" aria-hidden="true">plan &amp; schedule</span>
@@ -1276,7 +1287,7 @@ Most important at the top.</h2>
       <span class="corner-hint later" aria-hidden="true">reconsider or let go</span>
 
       <span class="axis-label axis-urgent" aria-hidden="true">urgent &#8594;</span>
-      <span class="axis-label axis-important" aria-hidden="true">important &#8594;</span>
+      <span class="axis-label axis-important" aria-hidden="true">important &#8593;</span>
 
       <div class="empty-state" id="empty-state">
         <p>Nothing here yet.
@@ -1288,14 +1299,6 @@ Start by adding what's on your mind.</p>
           <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
         </div>
         <button class="canvas-add-btn" id="canvas-add-btn" aria-label="Add new task to the map">+</button>
-      </div>
-
-      <!-- Map guide -->
-      <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
-      <div class="map-guide-content" id="map-guide-content">
-        <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
-        <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
-        <button class="map-guide-close" id="map-guide-close">got it</button>
       </div>
 
       <!-- Phase 4.1: timeline scrubber inside canvas, bottom-right -->
@@ -1704,10 +1707,13 @@ function renderSortList(pass) {
       input.addEventListener('blur', save);
     });
 
-    // ── Drag to reorder (pointerdown → vertical movement) ──
+    // ── Drag to reorder ──
+    // On touch: only the handle initiates drag (so card body scrolls the page)
+    // On mouse: anywhere on the card initiates drag
     card.addEventListener('pointerdown', (e) => {
       if (card.querySelector('.sort-edit-input')) return;
       if (e.button !== 0 && e.pointerType !== 'touch') return;
+      if (e.pointerType === 'touch' && !e.target.closest('.handle')) return;
       onSortPointerDown(e, pass);
     });
 
@@ -2015,7 +2021,7 @@ function computeCanvasPositions(canvasW, canvasH) {
   const n = state.tasks.length;
   if (n === 0) return {};
 
-  const EDGE_PAD = 32;
+  const EDGE_PAD = 64; // keep cards away from edge labels and canvas border
   const MIN_GAP = 32;
 
   const usableW = canvasW - EDGE_PAD * 2;
@@ -2127,8 +2133,6 @@ function buildCanvasCards(rm) {
   const canvas = document.getElementById('scatter-canvas');
   canvas.querySelectorAll('.canvas-card').forEach(c => c.remove());
 
-  let firstDragHintShown = false;
-
   state.tasks.forEach(task => {
     const pos = state.cardPositions[task.id];
     if (!pos) return;
@@ -2144,43 +2148,93 @@ function buildCanvasCards(rm) {
     card.style.top = pos.y + 'px';
     card.style.opacity = '0';
 
-    const isFirstCard = !firstDragHintShown;
-
     // Phase 1.3: SVG with viewBox, width/height attributes
     card.innerHTML = `
       <span class="card-text">${escapeHtml(task.text)}</span>
       <div class="card-strike" aria-hidden="true">
         <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
       </div>
-      <span class="drag-hint" aria-hidden="true">\u2807</span>
-      ${isFirstCard ? '<span class="drag-tooltip" aria-hidden="true">hold to reposition</span>' : ''}
     `;
 
     // Phase 1.3: double-rAF for strike path
     requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
 
-    if (isFirstCard) {
-      firstDragHintShown = true;
-      const tooltip = card.querySelector('.drag-tooltip');
-      if (tooltip) {
-        card.addEventListener('mouseenter', function onFirstHover() {
-          tooltip.style.opacity = '1';
-          card.removeEventListener('mouseenter', onFirstHover);
-          card._hasDragTooltip = true;
-        }, { once: true });
-      }
-    }
-
     setupLongPressDrag(card, task.id);
     setupSwipeStrike(card, task.id);
 
-    card.addEventListener('click', (e) => {
-      if (card._suppressNextClick) {
-        card._suppressNextClick = false;
-        return;
-      }
-      onCanvasCardTap(card, task.id);
+    card.addEventListener('pointerdown', () => {
+      document.querySelectorAll('.canvas-card').forEach(c => { c.style.zIndex = '1'; });
+      card.style.zIndex = '10';
     });
+    card.addEventListener('focus', () => {
+      document.querySelectorAll('.canvas-card').forEach(c => { c.style.zIndex = '1'; });
+      card.style.zIndex = '10';
+    });
+
+    let clickTimer = null;
+    card.addEventListener('click', (e) => {
+      if (card._suppressNextClick) { card._suppressNextClick = false; return; }
+      if (card.querySelector('input')) return;
+      clearTimeout(clickTimer);
+      clickTimer = setTimeout(() => {
+        onCanvasCardTap(card, task.id);
+      }, 250);
+    });
+
+    card.addEventListener('dblclick', (e) => {
+      e.stopPropagation();
+      clearTimeout(clickTimer);
+      card._suppressNextClick = true;
+      setTimeout(() => { card._suppressNextClick = false; }, 300);
+
+      const textEl = card.querySelector('.card-text');
+      if (textEl.getAttribute('contenteditable') === 'true') return;
+      const originalText = textEl.textContent;
+      const taskId = card.dataset.id;
+
+      textEl.setAttribute('contenteditable', 'true');
+      textEl.style.outline = 'none';
+      textEl.focus();
+
+      // Place cursor at end
+      const range = document.createRange();
+      range.selectNodeContents(textEl);
+      range.collapse(false);
+      const sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+
+      function save() {
+        textEl.setAttribute('contenteditable', 'false');
+        // Normalize: convert <br> and <div> to \n, then get plain text for state
+        const html = textEl.innerHTML;
+        const plainText = textEl.textContent.trim() || originalText;
+        if (plainText !== originalText) {
+          const t = state.tasks.find(t => t.id === taskId);
+          if (t) t.text = plainText;
+        }
+        // Preserve line breaks in display by keeping innerHTML with <br> tags
+        // Clean up: normalize divs/ps from contenteditable to simple <br>
+        const cleaned = html.replace(/<div>/gi, '<br>').replace(/<\/div>/gi, '').replace(/<p>/gi, '<br>').replace(/<\/p>/gi, '').replace(/^<br>/, '').trim();
+        textEl.innerHTML = cleaned || escapeHtml(originalText);
+        card.setAttribute('aria-label', `${plainText} — click to toggle done`);
+        requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+      }
+
+      function cancel() {
+        textEl.setAttribute('contenteditable', 'false');
+        textEl.textContent = originalText;
+      }
+
+      textEl.addEventListener('keydown', function handler(ev) {
+        if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); save(); textEl.removeEventListener('keydown', handler); }
+        if (ev.key === 'Escape') { ev.preventDefault(); cancel(); textEl.removeEventListener('keydown', handler); }
+        ev.stopPropagation();
+      });
+
+      textEl.addEventListener('blur', save, { once: true });
+    });
+
     card.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
@@ -2191,12 +2245,18 @@ function buildCanvasCards(rm) {
         const STEP = 20;
         const canvasRect = canvas.getBoundingClientRect();
         const EDGE = 24;
-        let x = parseFloat(card.style.left) || 0;
-        let y = parseFloat(card.style.top) || 0;
+        const oldX = parseFloat(card.style.left) || 0;
+        const oldY = parseFloat(card.style.top) || 0;
+        let x = oldX;
+        let y = oldY;
         if (e.key === 'ArrowLeft')  x = Math.max(EDGE, x - STEP);
         if (e.key === 'ArrowRight') x = Math.min(canvasRect.width - card.offsetWidth - EDGE, x + STEP);
         if (e.key === 'ArrowUp')    y = Math.max(EDGE, y - STEP);
         if (e.key === 'ArrowDown')  y = Math.min(canvasRect.height - card.offsetHeight - EDGE, y + STEP);
+        if (x === oldX && y === oldY) {
+          announce(`${getTaskText(task.id)} at edge`);
+          return;
+        }
         card.style.left = x + 'px';
         card.style.top  = y + 'px';
         state.cardPositions[task.id] = { x, y };
@@ -2299,7 +2359,7 @@ function onCanvasCardTap(card, id) {
     card.setAttribute('aria-label', `${text} — click to toggle done`);
     // Set inline strokeDashoffset to full length (hidden)
     if (strikePath) {
-      const len = parseFloat(strikePath.style.strokeDasharray) || 500;
+      const len = strikePath.getTotalLength?.() || parseFloat(strikePath.style.strokeDasharray) || 100;
       strikePath.style.strokeDashoffset = len + '';
     }
     announce(`${text} — unmarked`);
@@ -2442,7 +2502,20 @@ function updateStrikePath(card) {
   // Set viewBox for proper scaling
   svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
 
-  const d = generateStrikePath(w, h);
+  const prevW = parseFloat(card.dataset.strikeW) || 0;
+  const prevH = parseFloat(card.dataset.strikeH) || 0;
+  const prevD = card.dataset.strikeD || '';
+
+  let d;
+  // Reuse existing path if dimensions haven't changed much
+  if (prevD && Math.abs(w - prevW) < 5 && Math.abs(h - prevH) < 5) {
+    d = prevD;
+  } else {
+    d = generateStrikePath(w, h);
+    card.dataset.strikeW = w;
+    card.dataset.strikeH = h;
+    card.dataset.strikeD = d;
+  }
   path.setAttribute('d', d);
   path.style.strokeWidth = '1.5';
 
@@ -2525,16 +2598,80 @@ function addTaskToCanvas(text) {
     <div class="card-strike" aria-hidden="true">
       <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
     </div>
-    <span class="drag-hint" aria-hidden="true">\u2807</span>
   `;
 
   setupLongPressDrag(card, task.id);
   setupSwipeStrike(card, task.id);
 
+  card.addEventListener('pointerdown', () => {
+    document.querySelectorAll('.canvas-card').forEach(c => { c.style.zIndex = '1'; });
+    card.style.zIndex = '10';
+  });
+  card.addEventListener('focus', () => {
+    document.querySelectorAll('.canvas-card').forEach(c => { c.style.zIndex = '1'; });
+    card.style.zIndex = '10';
+  });
+
+  let clickTimer = null;
   card.addEventListener('click', (e) => {
     if (card._suppressNextClick) { card._suppressNextClick = false; return; }
-    onCanvasCardTap(card, task.id);
+    if (card.querySelector('input')) return;
+    clearTimeout(clickTimer);
+    clickTimer = setTimeout(() => {
+      onCanvasCardTap(card, task.id);
+    }, 250);
   });
+
+  card.addEventListener('dblclick', (e) => {
+    e.stopPropagation();
+    clearTimeout(clickTimer);
+    card._suppressNextClick = true;
+    setTimeout(() => { card._suppressNextClick = false; }, 300);
+
+    const textEl = card.querySelector('.card-text');
+    if (textEl.getAttribute('contenteditable') === 'true') return;
+    const originalText = textEl.textContent;
+    const taskId = card.dataset.id;
+
+    textEl.setAttribute('contenteditable', 'true');
+    textEl.style.outline = 'none';
+    textEl.focus();
+
+    const range = document.createRange();
+    range.selectNodeContents(textEl);
+    range.collapse(false);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+
+    function save() {
+      textEl.setAttribute('contenteditable', 'false');
+      const html = textEl.innerHTML;
+      const plainText = textEl.textContent.trim() || originalText;
+      if (plainText !== originalText) {
+        const t = state.tasks.find(t => t.id === taskId);
+        if (t) t.text = plainText;
+      }
+      const cleaned = html.replace(/<div>/gi, '<br>').replace(/<\/div>/gi, '').replace(/<p>/gi, '<br>').replace(/<\/p>/gi, '').replace(/^<br>/, '').trim();
+      textEl.innerHTML = cleaned || escapeHtml(originalText);
+      card.setAttribute('aria-label', `${plainText} — click to toggle done`);
+      requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+    }
+
+    function cancel() {
+      textEl.setAttribute('contenteditable', 'false');
+      textEl.textContent = originalText;
+    }
+
+    textEl.addEventListener('keydown', function handler(ev) {
+      if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); save(); textEl.removeEventListener('keydown', handler); }
+      if (ev.key === 'Escape') { ev.preventDefault(); cancel(); textEl.removeEventListener('keydown', handler); }
+      ev.stopPropagation();
+    });
+
+    textEl.addEventListener('blur', save, { once: true });
+  });
+
   card.addEventListener('keydown', e => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -2545,12 +2682,18 @@ function addTaskToCanvas(text) {
       const STEP = 20;
       const canvasRect2 = canvas.getBoundingClientRect();
       const EDGE = 24;
-      let cx = parseFloat(card.style.left) || 0;
-      let cy = parseFloat(card.style.top) || 0;
+      const oldCx = parseFloat(card.style.left) || 0;
+      const oldCy = parseFloat(card.style.top) || 0;
+      let cx = oldCx;
+      let cy = oldCy;
       if (e.key === 'ArrowLeft')  cx = Math.max(EDGE, cx - STEP);
       if (e.key === 'ArrowRight') cx = Math.min(canvasRect2.width - card.offsetWidth - EDGE, cx + STEP);
       if (e.key === 'ArrowUp')    cy = Math.max(EDGE, cy - STEP);
       if (e.key === 'ArrowDown')  cy = Math.min(canvasRect2.height - card.offsetHeight - EDGE, cy + STEP);
+      if (cx === oldCx && cy === oldCy) {
+        announce(`${getTaskText(task.id)} at edge`);
+        return;
+      }
       card.style.left = cx + 'px';
       card.style.top  = cy + 'px';
       state.cardPositions[task.id] = { x: cx, y: cy };
@@ -2583,11 +2726,12 @@ function setupLongPressDrag(card, id) {
   let pointerId = null;
   let moved = false;
 
-  const LONG_PRESS_MS = 400;
+  const LONG_PRESS_MS = 200;
   const MOVEMENT_TOLERANCE = 14;
   const SNAP_THRESHOLD = 20;
 
   function onStart(e) {
+    if (card.querySelector('input')) return;
     if (e.button !== undefined && e.button !== 0) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -2616,14 +2760,6 @@ function setupLongPressDrag(card, id) {
         card.style.boxShadow = 'var(--card-shadow-lift)';
         card.style.zIndex = '100';
 
-        if (card._hasDragTooltip) {
-          const tooltip = card.querySelector('.drag-tooltip');
-          if (tooltip) {
-            tooltip.style.transition = 'opacity 200ms ease';
-            tooltip.style.opacity = '0';
-          }
-          card._hasDragTooltip = false;
-        }
       }
     }, LONG_PRESS_MS);
   }
@@ -2855,6 +2991,34 @@ function stopTipRotation() {
 function initSortTips() {
   startTipRotation('sort-tip-urgency', URGENCY_TIPS, 'urgency');
   startTipRotation('sort-tip-importance', IMPORTANCE_TIPS, 'importance');
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Corner label popovers
+// ──────────────────────────────────────────────────────────────────────────────
+
+function initCornerPopovers() {
+  const labels = document.querySelectorAll('.corner-label');
+  const popovers = document.querySelectorAll('.corner-popover');
+
+  labels.forEach(label => {
+    label.addEventListener('click', (e) => {
+      e.stopPropagation();
+      // Find the matching popover (next sibling)
+      const popover = label.nextElementSibling;
+      if (!popover || !popover.classList.contains('corner-popover')) return;
+      const isOpen = popover.classList.contains('open');
+      // Close all popovers first
+      popovers.forEach(p => p.classList.remove('open'));
+      // Toggle the clicked one
+      if (!isOpen) popover.classList.add('open');
+    });
+  });
+
+  // Click outside dismisses all popovers
+  document.addEventListener('click', () => {
+    popovers.forEach(p => p.classList.remove('open'));
+  });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3335,6 +3499,7 @@ function init() {
   initDump();
   initSortTips();
   initMapGuide();
+  initCornerPopovers();
   initPageScroll();
 
   const savedPhase = loadSavedState();
