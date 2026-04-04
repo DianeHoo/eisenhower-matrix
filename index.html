@@ -3154,8 +3154,12 @@ function initPageScroll() {
     // If cursor is over a scrollable child, never trigger page overscroll
     const scrollableChild = e.target.closest('.dump-cards, .sort-list');
     if (scrollableChild) {
-      // Let the child scroll naturally — block page overscroll entirely
-      return;
+      const hasOverflow = scrollableChild.scrollHeight > scrollableChild.clientHeight + 5;
+      if (hasOverflow) {
+        // Card list needs scrolling — let it scroll, block page overscroll
+        return;
+      }
+      // Card list fits on screen — pass through to page overscroll
     }
 
     const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
@@ -3254,6 +3258,21 @@ function initPageScroll() {
     if (!activePhase) return;
 
     const deltaY = touchStartY - e.touches[0].clientY; // positive = swiping up (scroll down)
+
+    // On touch: check if a scrollable child (card list) is under the finger
+    // If it has overflow and hasn't reached its edge, let it scroll naturally
+    const scrollableChild = e.target.closest('.dump-cards, .sort-list');
+    if (scrollableChild) {
+      const hasOverflow = scrollableChild.scrollHeight > scrollableChild.clientHeight + 5;
+      if (hasOverflow) {
+        const childAtBottom = scrollableChild.scrollTop + scrollableChild.clientHeight >= scrollableChild.scrollHeight - 5;
+        const childAtTop = scrollableChild.scrollTop <= 5;
+        // Only pass through to page overscroll if child is at its edge
+        if (deltaY > 0 && !childAtBottom) return; // still scrolling down within list
+        if (deltaY < 0 && !childAtTop) return;    // still scrolling up within list
+      }
+    }
+
     const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
     const isAtTop = activePhase.scrollTop <= 5;
 
