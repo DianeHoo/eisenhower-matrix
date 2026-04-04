@@ -2710,47 +2710,11 @@ function setupLongPressDrag(card, id) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const LS_KEY = 'eisenhower-matrix-state';
+try { localStorage.removeItem(LS_KEY); } catch(e) {}
 
-function saveState() {
-  try {
-    const serializable = {
-      tasks: state.tasks,
-      urgencyOrder: state.urgencyOrder,
-      importanceOrder: state.importanceOrder,
-      phase: state.phase,
-      cardPositions: state.cardPositions,
-      done: Array.from(state.done),
-      idCounter,
-    };
-    localStorage.setItem(LS_KEY, JSON.stringify(serializable));
-  } catch(e) {}
-}
-
-function loadSavedState() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    if (!raw) return false;
-    const saved = JSON.parse(raw);
-    if (!saved || !Array.isArray(saved.tasks) || saved.tasks.length === 0) return false;
-
-    state.tasks = saved.tasks;
-    state.urgencyOrder = saved.urgencyOrder || [];
-    state.importanceOrder = saved.importanceOrder || [];
-    state.cardPositions = saved.cardPositions || {};
-    state.done = new Set(saved.done || []);
-    idCounter = saved.idCounter || saved.tasks.length;
-
-    // Migrate old phase names
-    let phase = saved.phase || 'dump';
-    if (phase === 'sort') {
-      phase = saved.sortPass === 1 ? 'sort-importance' : 'sort-urgency';
-    }
-
-    return phase;
-  } catch(e) {
-    return false;
-  }
-}
+// Persistence disabled — backend will replace this later
+function saveState() {}
+function loadSavedState() { return false; }
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Start fresh
@@ -3384,9 +3348,7 @@ function init() {
     }
   } else {
     showPhase('dump');
-    document.fonts.ready.then(() => {
-      document.getElementById('dump-input').focus();
-    });
+    // Don't auto-focus — let the typewriter animation play
   }
 }
 
