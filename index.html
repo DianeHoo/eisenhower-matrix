@@ -25,6 +25,8 @@
   --card-bg: #ffffff;
   --text: #2e342d;
   --text-dim: rgba(46, 52, 45, 0.58);
+  --text-muted: rgba(46, 52, 45, 0.3);
+  --text-ghost: rgba(46, 52, 45, 0.2);
   --sage: #526347;
   --sage-08: rgba(82, 99, 71, 0.08);
   --sage-15: rgba(82, 99, 71, 0.15);
@@ -97,6 +99,13 @@ html, body {
 .phase:not(.phase-active) .phase-nav-btn {
   display: none;
 }
+.sort-section .phase-nav-btn {
+  position: static;
+  transform: none;
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 0 32px;
+}
 
 /* ── Phase states ── */
 .phase {
@@ -141,18 +150,70 @@ html, body {
 #phase-dump {
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   background: var(--canvas-bg);
 }
 
 .dump-inner {
-  width: min(600px, 100% - 48px);
   display: flex;
   flex-direction: column;
-  gap: 0;
-  min-height: 60vh;
-  justify-content: center;
+  width: min(600px, 100% - 48px);
+  margin: 0 auto;
+  height: 100%;
+}
+
+.dump-upper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-bottom: 24px;
+}
+
+.dump-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--text);
+  letter-spacing: -0.01em;
+  margin-bottom: 4px;
+}
+
+.dump-tagline {
+  font-family: var(--font-display);
+  font-size: 12px;
+  color: var(--sage-interactive);
+  letter-spacing: 0.02em;
+  margin-bottom: 0;
+}
+
+.dump-input-area {
+  flex-shrink: 0;
+}
+
+.dump-lower {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.dump-lower::-webkit-scrollbar { display: none; }
+.dump-lower::after {
+  content: '';
+  display: block;
+  position: sticky;
+  bottom: 0;
+  height: 300px;
+  margin-top: -300px;
+  flex-shrink: 0;
+  background: linear-gradient(to bottom, transparent, var(--canvas-bg) 85%);
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0;
+  transition: opacity 300ms;
+}
+.dump-lower.has-overflow::after {
+  opacity: 1;
 }
 
 .dump-input-wrap {
@@ -166,7 +227,7 @@ html, body {
   border-bottom: 1px solid var(--sage-15);
   padding: 12px 0;
   font-family: var(--font-body);
-  font-size: 24px;
+  font-size: 20px;
   color: var(--text);
   outline: none;
   caret-color: var(--sage);
@@ -184,7 +245,7 @@ html, body {
 }
 
 #dump-input::placeholder {
-  color: rgba(46, 52, 45, 0.28);
+  color: var(--text-muted);
   font-style: normal;
 }
 
@@ -206,26 +267,44 @@ html, body {
   width: 100%;
 }
 
-/* Phase 4.4: "Press enter to dump" hint */
-.dump-hint {
-  display: block;
-  text-align: left;
+/* "Dump Tasks" inline hint — right side of input */
+.dump-input-hint {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
   font-family: var(--font-display);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.2em;
+  font-size: 11px;
   color: var(--sage-label);
   opacity: 0;
-  transition: opacity 300ms ease;
-  padding-top: 8px;
+  transition: opacity 200ms ease;
   pointer-events: none;
+  letter-spacing: 0.04em;
 }
-/* Show hint on focus OR when tasks exist (so input stays findable) */
-.dump-input-wrap:focus-within + .dump-hint,
-.dump-input-wrap:focus-within ~ .dump-hint,
-.dump-input-wrap.has-value + .dump-hint,
-.dump-input-wrap.has-value ~ .dump-hint {
-  opacity: 0.4;
+/* Show hint ONLY when input has actual characters typed */
+.dump-input-wrap.has-input-text .dump-input-hint {
+  opacity: 0.5;
+}
+
+.existing-tasks-line {
+  display: none;
+  background: none;
+  border: none;
+  width: 100%;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 12px 0 0;
+  text-align: center;
+  letter-spacing: 0.01em;
+  transition: color 150ms;
+}
+.existing-tasks-line:hover { color: var(--sage); }
+.existing-tasks-line:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
 }
 
 .dump-cards {
@@ -233,16 +312,14 @@ html, body {
   flex-direction: column;
   gap: 6px;
   margin-top: 16px;
-  max-height: 45vh;
-  overflow-y: auto;
-  padding-bottom: 60px; /* space to scroll past the fade and see bottom items */
   scrollbar-width: none;
 }
 .dump-cards::-webkit-scrollbar { display: none; }
-/* Fade extends to bottom — always present when overflow, cards scroll beneath it */
-.dump-cards.has-overflow {
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 95%);
-  mask-image: linear-gradient(to bottom, black 0%, black 50%, transparent 95%);
+.dump-lower.has-overflow .dump-cards::after {
+  content: '';
+  display: block;
+  height: 150px;
+  flex-shrink: 0;
 }
 
 .dump-card {
@@ -316,11 +393,16 @@ html, body {
 
 .dump-footer {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between;
   gap: 16px;
   padding: 16px 0 8px;
   min-height: 48px;
   align-items: center;
+  transition: opacity 200ms;
+}
+.has-tasks .dump-footer,
+.has-tasks .map-guide-content {
+  display: none;
 }
 
 /* Phase 4.3: "suggest tasks" button */
@@ -328,8 +410,8 @@ html, body {
   background: none;
   border: none;
   font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--sage-45);
+  font-size: 13px;
+  color: var(--sage-interactive);
   cursor: pointer;
   padding: 4px 0;
   letter-spacing: 0.01em;
@@ -342,7 +424,7 @@ html, body {
   border-radius: 4px;
 }
 
-/* #btn-ready-sort visibility — controlled by .visible class */
+/* #btn-ready-sort — fixed at viewport bottom on dump page */
 #btn-ready-sort {
   opacity: 0;
   pointer-events: none;
@@ -367,10 +449,11 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
+  flex: 1 0 auto;
   overflow: visible;
-  padding: 48px 0 24px;
+  padding: 100px 0 100px;
   justify-content: center;
+  justify-content: safe center;
 }
 
 .sort-progress {
@@ -439,13 +522,8 @@ html, body {
   flex-direction: column;
   gap: 6px;
   flex: none;
-  overflow-y: auto;
-  padding-bottom: 80px;
-  scrollbar-width: none;
   position: relative;
-  max-height: 60vh;
 }
-.sort-list::-webkit-scrollbar { display: none; }
 
 .sort-card {
   background: var(--card-bg);
@@ -615,7 +693,7 @@ html, body {
   position: absolute;
   font-family: var(--font-body);
   font-size: 11px;
-  color: rgba(46, 52, 45, 0.35);
+  color: var(--text-muted);
   pointer-events: none;
   letter-spacing: 0.01em;
   white-space: nowrap;
@@ -686,10 +764,12 @@ html, body {
   box-shadow: var(--card-shadow);
   padding: 10px 14px;
   font-family: var(--font-body);
-  font-size: 12.5px;
+  font-size: 13px;
   color: var(--text);
   cursor: pointer;
   user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
   touch-action: manipulation;
   white-space: normal;
   word-break: break-word;
@@ -863,16 +943,68 @@ html, body {
 .empty-state p {
   font-family: var(--font-display);
   font-size: 14px;
-  color: rgba(46, 52, 45, 0.3);
+  color: var(--text-muted);
   text-align: center;
   line-height: 1.6;
   white-space: pre-line;
 }
 
-/* ── Canvas toolbar — bottom center ── */
+/* ── Canvas utility buttons — bottom left ── */
+.canvas-util-wrap {
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 200ms;
+}
+.canvas-util-wrap.visible {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.canvas-util-btn {
+  background: none;
+  border: none;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-interactive);
+  cursor: pointer;
+  padding: 4px 0;
+  letter-spacing: 0.02em;
+  transition: color 150ms;
+}
+.canvas-util-btn:hover { color: var(--sage); }
+.canvas-util-btn:focus-visible {
+  outline: 2px solid var(--sage);
+  outline-offset: 4px;
+  border-radius: 4px;
+}
+.canvas-util-sep {
+  color: var(--text-ghost);
+  font-size: 11px;
+  margin: 0 2px;
+  user-select: none;
+}
+
+/* ── Aria live region ── */
+#aria-live {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
+
+/* ── Phase 4.2: canvas toolbar �� bottom center ── */
 .canvas-toolbar {
   position: absolute;
-  bottom: 28px;
+  bottom: 20px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 200;
@@ -918,16 +1050,6 @@ html, body {
   line-height: 0;
 }
 
-/* ── Aria live region ── */
-#aria-live {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-}
-
 .canvas-add-input-wrap {
   position: absolute;
   bottom: 68px;
@@ -955,7 +1077,7 @@ html, body {
   caret-color: var(--sage);
 }
 .canvas-add-input::placeholder {
-  color: rgba(46, 52, 45, 0.28);
+  color: var(--text-muted);
 }
 .canvas-add-input:focus-visible {
   outline: 2px solid var(--sage);
@@ -970,20 +1092,20 @@ html, body {
   left: 0;
   transform: translateY(-50%);
   font-family: var(--font-body);
-  font-size: 24px;
-  color: rgba(46, 52, 45, 0.28);
+  font-size: 20px;
+  color: var(--text-muted);
   pointer-events: all;
   cursor: text;
   white-space: nowrap;
   overflow: hidden;
-  border-right: 2px solid rgba(82, 99, 71, 0.5);
+  border-right: 2px solid var(--sage-50);
   animation: cursorBlink 1s step-start infinite;
   transition: color 200ms ease;
 }
 
 /* Hover on the entire input-wrap area, not just the text */
 .dump-input-wrap:hover .typewriter {
-  color: rgba(46, 52, 45, 0.75);
+  color: var(--text-dim);
 }
 
 .dump-input-wrap:focus-within .typewriter,
@@ -992,7 +1114,7 @@ html, body {
 }
 
 @keyframes cursorBlink {
-  0%, 100% { border-right-color: rgba(82, 99, 71, 0.5); }
+  0%, 100% { border-right-color: var(--sage-50); }
   50% { border-right-color: transparent; }
 }
 
@@ -1003,20 +1125,7 @@ button:focus-visible {
   border-radius: 4px;
 }
 
-/* ── Fix 1: Guidance system ── */
-.dump-intro {
-  font-family: var(--font-display);
-  font-size: 13px;
-  color: var(--sage-label);
-  text-align: left;
-  margin-bottom: 24px;
-  line-height: 1.6;
-  transition: opacity 400ms ease;
-}
-#phase-dump.has-tasks .dump-intro {
-  opacity: 0;
-  pointer-events: none;
-}
+/* (dump-intro removed — replaced by dump-title + dump-tagline) */
 
 /* Sort tips */
 .sort-tip {
@@ -1076,10 +1185,10 @@ button:focus-visible {
 .map-guide-toggle {
   background: none;
   border: none;
-  font-family: var(--font-display);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
+  font-family: var(--font-body);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: 0;
   color: var(--sage-interactive);
   cursor: pointer;
   padding: 4px 0;
@@ -1087,9 +1196,9 @@ button:focus-visible {
 }
 .map-guide-toggle:hover { color: var(--sage); }
 .map-guide-content {
-  background: var(--sage-08);
-  border-radius: var(--radius);
-  padding: 0 20px;
+  background: none;
+  border-radius: 0;
+  padding: 0;
   max-width: 320px;
   max-height: 0;
   overflow: hidden;
@@ -1101,13 +1210,13 @@ button:focus-visible {
 .map-guide-content.open {
   max-height: 300px;
   opacity: 1;
-  padding: 16px 20px;
+  padding: 16px 0;
   pointer-events: all;
 }
 .map-guide-content p {
   font-family: var(--font-body);
-  font-size: 12px;
-  color: var(--text);
+  font-size: 13px;
+  color: var(--sage-interactive);
   line-height: 1.6;
   margin-bottom: 10px;
 }
@@ -1175,9 +1284,7 @@ button:focus-visible {
   .sort-inner > .sort-progress,
   .sort-inner > .sort-header,
   .sort-inner > .sort-list,
-  .sort-inner > .sort-tip,
-  .sort-inner > .sort-footer { width: min(520px, 100% - 32px); }
-  #dump-input { font-size: 20px; }
+  .sort-inner > .sort-tip { width: min(520px, 100% - 32px); }
   .sort-header { font-size: 16px !important; }
   .canvas-card { max-width: 160px; }
   .corner-label { font-size: 12px; padding: 8px 10px; }
@@ -1206,33 +1313,39 @@ button:focus-visible {
   ═══════════════════════════════════════ -->
   <section id="phase-dump" class="phase phase-active" aria-label="Brain dump — add everything on your mind">
     <div class="dump-inner" id="dump-inner">
-      <h2 class="sr-only">Brain dump</h2>
-      <p class="dump-intro">Your head is full. That's why you're here.<br>
-Write out everything — don't sort yet, don't judge. Just get it out.</p>
-      <div class="dump-input-wrap">
-        <input
-          type="text"
-          id="dump-input"
-          placeholder=""
-          aria-label="Add a task"
-          autocomplete="off"
-          autocorrect="off"
-        >
-        <span class="typewriter" id="typewriter" aria-hidden="true"></span>
-        <div class="input-underline"></div>
-      </div>
-      <span class="dump-hint" id="dump-hint">Press enter to dump</span>
-      <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
-      <div class="dump-footer">
-        <button id="btn-suggest-tasks" aria-label="Suggest example tasks">suggest tasks</button>
+      <div class="dump-upper">
+        <h2 class="dump-title">Priority Grid</h2>
+        <p class="dump-tagline">Sort your tasks. Clear your mind.</p>
       </div>
 
-      <!-- Map guide -->
-      <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
-      <div class="map-guide-content" id="map-guide-content">
-        <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
-        <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
-        <button class="map-guide-close" id="map-guide-close">got it</button>
+      <div class="dump-input-area">
+        <div class="dump-input-wrap">
+          <input
+            type="text"
+            id="dump-input"
+            placeholder=""
+            aria-label="Add a task"
+            autocomplete="off"
+            autocorrect="off"
+          >
+          <span class="typewriter" id="typewriter" aria-hidden="true"></span>
+          <span class="dump-input-hint">Dump Tasks &#8629;</span>
+          <div class="input-underline"></div>
+        </div>
+        <button class="existing-tasks-line" id="existing-tasks-line" aria-label="Show current tasks">show current tasks</button>
+      </div>
+
+      <div class="dump-lower">
+        <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
+        <div class="dump-footer">
+          <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
+          <button id="btn-suggest-tasks" aria-label="Suggest example tasks">suggest tasks</button>
+        </div>
+        <div class="map-guide-content" id="map-guide-content">
+          <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
+          <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
+          <!-- close button removed — user clicks toggle again to collapse -->
+        </div>
       </div>
     </div>
     <button class="phase-nav-btn" id="btn-ready-sort" aria-label="Ready to sort your tasks">
@@ -1334,9 +1447,23 @@ Start by adding what's on your mind.</p>
         <div class="canvas-add-input-wrap" id="canvas-add-input-wrap">
           <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
         </div>
-        <button class="toolbar-btn" id="btn-cleanup" aria-label="Clean up completed tasks" title="Clean up completed tasks">✦</button>
-        <button class="toolbar-btn toolbar-btn-add" id="canvas-add-btn" aria-label="Add new tasks" title="Add new tasks"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="3" x2="10" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
-        <button class="toolbar-btn" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top">↑</button>
+        <div class="toolbar-item">
+          <button class="toolbar-btn" id="btn-cleanup" aria-label="Clean up completed tasks" title="Clean up completed tasks">✦</button>
+        </div>
+        <div class="toolbar-item">
+          <button class="toolbar-btn toolbar-btn-add" id="canvas-add-btn" aria-label="Add new tasks" title="Add new tasks"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="3" x2="10" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        </div>
+        <div class="toolbar-item">
+          <button class="toolbar-btn" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top">↑</button>
+        </div>
+      </div>
+
+      <!-- Utility buttons — bottom left -->
+      <div class="canvas-util-wrap" id="canvas-util-wrap">
+        <button class="canvas-util-btn" id="btn-export" aria-label="Export your grid as a file">export</button>
+        <span class="canvas-util-sep" aria-hidden="true">·</span>
+        <button class="canvas-util-btn" id="btn-import" aria-label="Import a previously exported grid file">import</button>
+        <input type="file" id="import-file-input" accept=".json" style="display:none" aria-hidden="true">
       </div>
     </div>
   </section>
@@ -1438,6 +1565,8 @@ function showPhase(targetPhase) {
 
   const toolbar = document.getElementById('canvas-toolbar');
   if (toolbar) toolbar.classList.toggle('visible', targetPhase === 'scatter');
+  const utilWrap = document.getElementById('canvas-util-wrap');
+  if (utilWrap) utilWrap.classList.toggle('visible', targetPhase === 'scatter');
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -1455,9 +1584,11 @@ function initDump() {
   // Fix 1: toggle has-tasks on dump phase for intro fade
   document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
 
-  // Toggle .has-value class — hide typewriter when input has text OR tasks exist
+  // Toggle .has-value — hide typewriter when input has text OR tasks exist
+  // Toggle .has-input-text — show "Dump Tasks ↵" hint only when characters typed
   input.addEventListener('input', () => {
     input.parentElement.classList.toggle('has-value', input.value.length > 0 || state.tasks.length > 0);
+    input.parentElement.classList.toggle('has-input-text', input.value.length > 0);
   });
 
   // Typewriter: hide on focus, restart on blur if empty
@@ -1479,6 +1610,7 @@ function initDump() {
       if (text) {
         addTask(text, true);
         input.value = '';
+        input.parentElement.classList.remove('has-input-text');
         updateSortButton();
         saveState();
       }
@@ -1614,12 +1746,89 @@ function renderDumpCards() {
   }
 }
 
+// Track old tasks (existed before returning to dump) vs new tasks (added this session)
+let oldTaskIds = new Set();   // set once in showDumpFresh, never changes
+let hiddenTaskIds = new Set(); // tracks which old tasks are currently hidden
+
+function showDumpFresh() {
+  // Called when returning to dump with existing tasks.
+  // Hides existing cards, shows toggle link, typewriter keeps running.
+  const cardsEl = document.getElementById('dump-cards');
+  const line = document.getElementById('existing-tasks-line');
+
+  if (state.tasks.length === 0) {
+    line.style.display = 'none';
+    oldTaskIds.clear();
+    hiddenTaskIds.clear();
+    return;
+  }
+
+  // Remember which tasks are "old" — this set is fixed for the session
+  oldTaskIds = new Set(state.tasks.map(t => t.id));
+  hiddenTaskIds = new Set(oldTaskIds);
+
+  // Clear visible cards
+  cardsEl.innerHTML = '';
+
+  // Show toggle link, reset to "show" state
+  line.textContent = 'show current tasks';
+  line.style.display = 'block';
+
+  // Update sort button to reflect total count
+  updateSortButton();
+
+  // Reset input to feel completely fresh — restart typewriter
+  const inputWrap = document.querySelector('.dump-input-wrap');
+  if (inputWrap) { inputWrap.classList.remove('has-value'); inputWrap.classList.remove('has-input-text'); }
+  const suggestBtn = document.getElementById('btn-suggest-tasks');
+  if (suggestBtn) { suggestBtn.style.opacity = '0'; suggestBtn.style.pointerEvents = 'none'; }
+  document.getElementById('dump-input').value = '';
+  startTypewriter();
+}
+
+function initExistingTasksLine() {
+  const line = document.getElementById('existing-tasks-line');
+  line.addEventListener('click', () => {
+    const cardsEl = document.getElementById('dump-cards');
+    if (hiddenTaskIds.size === 0) {
+      // Currently showing old tasks — hide only the old ones, keep new ones
+      hiddenTaskIds = new Set(oldTaskIds);
+      cardsEl.querySelectorAll('.dump-card').forEach(card => {
+        if (oldTaskIds.has(card.dataset.id)) card.remove();
+      });
+      line.textContent = 'show current tasks';
+      updateDumpOverflow();
+      // Restart typewriter if no new cards remain visible
+      const input = document.getElementById('dump-input');
+      if (!input.value && cardsEl.children.length === 0) {
+        document.querySelector('.dump-input-wrap')?.classList.remove('has-value');
+        startTypewriter();
+      }
+    } else {
+      // Currently hidden — show all tasks (old + new)
+      renderDumpCards();
+      hiddenTaskIds.clear();
+      line.textContent = 'hide current tasks';
+    }
+    updateSortButton();
+  });
+}
+
 function updateSortButton() {
   const btn = document.getElementById('btn-ready-sort');
+  const label = btn.querySelector('.nav-label');
   btn.classList.toggle('visible', state.tasks.length > 0);
+  if (hiddenTaskIds.size > 0) {
+    label.textContent = `sort all ${state.tasks.length} tasks`;
+  } else {
+    label.textContent = 'ready to sort';
+  }
 }
 
 function transitionToSortUrgency() {
+  oldTaskIds.clear();
+  hiddenTaskIds.clear();
+  document.getElementById('existing-tasks-line').style.display = 'none';
   // Preserve existing order if it has all task IDs (e.g. from sample tasks)
   const taskIds = new Set(state.tasks.map(t => t.id));
   const urgencyValid = state.urgencyOrder.length === state.tasks.length &&
@@ -2423,92 +2632,8 @@ function onCanvasCardTap(card, id) {
   saveState();
 }
 
-function setupSwipeStrike(card, id) {
-  let swipeStart = null;
-  let isHorizSwipe = null;
-
-  card.addEventListener('touchstart', (e) => {
-    if (card._suppressNextClick) return;
-    const t = e.touches[0];
-    swipeStart = { x: t.clientX, y: t.clientY };
-    isHorizSwipe = null;
-  }, { passive: true });
-
-  card.addEventListener('touchmove', (e) => {
-    if (!swipeStart) return;
-    const t = e.touches[0];
-    const dx = t.clientX - swipeStart.x;
-    const dy = t.clientY - swipeStart.y;
-
-    if (isHorizSwipe === null && (Math.abs(dx) > 6 || Math.abs(dy) > 6)) {
-      isHorizSwipe = Math.abs(dx) > Math.abs(dy);
-    }
-
-    if (!isHorizSwipe) return;
-
-    e.preventDefault();
-
-    const cardW = card.offsetWidth - 28;
-    const progress = Math.min(1, Math.max(0, Math.abs(dx) / cardW));
-    const strikePath = card.querySelector('.strike-path');
-    if (strikePath) {
-      const len = parseFloat(strikePath.style.strokeDasharray) || strikePath.getTotalLength() || 200;
-      strikePath.style.transition = 'none';
-      strikePath.style.strokeDashoffset = (len * (1 - progress)) + '';
-    }
-    const textEl = card.querySelector('.card-text');
-    if (textEl) {
-      textEl.style.transition = 'none';
-      textEl.style.opacity = String(1 - progress * 0.65);
-    }
-  }, { passive: false });
-
-  card.addEventListener('touchend', (e) => {
-    if (!swipeStart || !isHorizSwipe) {
-      swipeStart = null;
-      isHorizSwipe = null;
-      return;
-    }
-
-    const t = e.changedTouches[0];
-    const dx = t.clientX - swipeStart.x;
-    const cardW = card.offsetWidth - 28;
-    const progress = Math.abs(dx) / cardW;
-
-    const strikePath = card.querySelector('.strike-path');
-    const textEl = card.querySelector('.card-text');
-
-    if (progress >= 0.6) {
-      if (strikePath) { strikePath.style.transition = ''; strikePath.style.strokeDashoffset = '0'; }
-      if (textEl) { textEl.style.transition = ''; textEl.style.opacity = ''; }
-      if (!state.done.has(id)) {
-        card.classList.add('done');
-        card._suppressNextClick = true;
-        setTimeout(() => { card._suppressNextClick = false; }, 300);
-        state.done.add(id);
-        card.setAttribute('aria-pressed', 'true');
-        card.setAttribute('aria-label', `${getTaskText(id)}, done — click to toggle done`);
-        announce(`${getTaskText(id)} — done`);
-        saveState();
-      }
-    } else {
-      if (strikePath) {
-        const len = parseFloat(strikePath.style.strokeDasharray) || strikePath.getTotalLength() || 200;
-        strikePath.style.transition = 'stroke-dashoffset 200ms cubic-bezier(0.4, 0, 0.2, 1)';
-        strikePath.style.strokeDashoffset = len + '';
-        setTimeout(() => { if (strikePath) { strikePath.style.transition = ''; } }, 210);
-      }
-      if (textEl) {
-        textEl.style.transition = 'opacity 200ms ease';
-        textEl.style.opacity = '';
-        setTimeout(() => { if (textEl) { textEl.style.transition = ''; } }, 210);
-      }
-    }
-
-    swipeStart = null;
-    isHorizSwipe = null;
-  }, { passive: true });
-}
+// Swipe-to-strike removed — tap toggles strikethrough, hold to drag, double-tap to edit
+function setupSwipeStrike(card, id) {}
 
 function getTaskText(id) {
   return state.tasks.find(t => t.id === id)?.text || '';
@@ -2565,8 +2690,8 @@ function updateStrikePath(card) {
   path.setAttribute('d', d);
   path.style.strokeWidth = '1.5';
 
-  // Floor for path length
-  const len = Math.max(path.getTotalLength?.() || w * 1.2, 10);
+  // Floor for path length — add extra to prevent residue dot at start
+  const len = Math.max(path.getTotalLength?.() || w * 1.2, 10) + 2;
   path.style.strokeDasharray = len + '';
   path.style.strokeDashoffset = card.classList.contains('done') ? '0' : len + '';
 }
@@ -2609,9 +2734,11 @@ function initCanvasAdd() {
 
   // Close on blur and reset iOS zoom
   addInput.addEventListener('blur', () => {
+    // Small delay so click-on-addBtn doesn't race with blur
     setTimeout(() => {
       addWrap.classList.remove('visible');
     }, 150);
+    // Reset any iOS auto-zoom that may have occurred
     const vp = document.querySelector('meta[name=viewport]');
     if (vp) {
       vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
@@ -2921,11 +3048,38 @@ function setupLongPressDrag(card, id) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const LS_KEY = 'eisenhower-matrix-state';
-try { localStorage.removeItem(LS_KEY); } catch(e) {}
 
-// Persistence disabled — backend will replace this later
-function saveState() {}
-function loadSavedState() { return false; }
+function saveState() {
+  try {
+    const serializable = {
+      tasks: state.tasks,
+      urgencyOrder: state.urgencyOrder,
+      importanceOrder: state.importanceOrder,
+      phase: state.phase,
+      cardPositions: state.cardPositions,
+      done: [...state.done],
+      idCounter: idCounter,
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(serializable));
+  } catch(e) { /* storage full or unavailable — silent fail */ }
+}
+
+function loadSavedState() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return false;
+    const saved = JSON.parse(raw);
+    if (!saved || !saved.tasks || !saved.phase) return false;
+    state.tasks = saved.tasks;
+    state.urgencyOrder = saved.urgencyOrder || [];
+    state.importanceOrder = saved.importanceOrder || [];
+    state.phase = saved.phase;
+    state.cardPositions = saved.cardPositions || {};
+    state.done = new Set(saved.done || []);
+    idCounter = saved.idCounter || 0;
+    return saved.phase;
+  } catch(e) { return false; }
+}
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Canvas toolbar: Clean up, Back to top
@@ -2994,13 +3148,12 @@ function doCleanup() {
 }
 
 function doBackToTop() {
-  // Re-render dump cards with current tasks
-  renderDumpCards();
-  updateSortButton();
+  // Show fresh dump — existing cards hidden behind context line
+  showDumpFresh();
   document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
 
   showPhase('dump');
-  announce('Back to the beginning. Your tasks are still here.');
+  announce('Back to the beginning. Add more tasks or tap to see existing ones.');
 }
 
 function initToolbar() {
@@ -3009,6 +3162,106 @@ function initToolbar() {
 
   if (cleanupBtn) cleanupBtn.addEventListener('click', doCleanup);
   if (backBtn) backBtn.addEventListener('click', doBackToTop);
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Export / Import
+// ──────────────────────────────────────────────────────────────────────────────
+
+function exportGrid() {
+  const data = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    grid: {
+      tasks: state.tasks,
+      urgencyOrder: state.urgencyOrder,
+      importanceOrder: state.importanceOrder,
+      phase: state.phase,
+      cardPositions: state.cardPositions,
+      done: [...state.done],
+      idCounter: idCounter,
+    }
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const d = new Date();
+  const stamp = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+  a.download = `priority-grid-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  announce('Grid exported.');
+}
+
+function importGrid(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.grid || !data.grid.tasks) {
+        announce('Invalid file. Could not restore grid.');
+        return;
+      }
+      const g = data.grid;
+      state.tasks = g.tasks || [];
+      state.urgencyOrder = g.urgencyOrder || [];
+      state.importanceOrder = g.importanceOrder || [];
+      state.phase = g.phase || 'dump';
+      state.cardPositions = g.cardPositions || {};
+      state.done = new Set(g.done || []);
+      idCounter = g.idCounter || 0;
+      saveState();
+
+      // Re-render from the restored phase
+      if (state.phase === 'scatter') {
+        showPhase('scatter');
+        document.getElementById('scatter-canvas').querySelectorAll('.canvas-card').forEach(c => c.remove());
+        document.fonts.ready.then(() => {
+          const canvas = document.getElementById('scatter-canvas');
+          const rect = canvas.getBoundingClientRect();
+          if (rect.width > 0) {
+            if (Object.keys(state.cardPositions).length === 0) {
+              state.cardPositions = computeCanvasPositions(rect.width, rect.height);
+            }
+            buildCanvasCards(prefersReducedMotion());
+            canvas.querySelectorAll('.canvas-card').forEach(c => { c.style.opacity = '1'; });
+            drawQuadrantLines(prefersReducedMotion());
+          }
+        });
+      } else if (state.phase === 'sort-urgency') {
+        renderSortList('urgency');
+        showPhase('sort-urgency');
+      } else if (state.phase === 'sort-importance') {
+        renderSortList('urgency');
+        renderSortList('importance');
+        showPhase('sort-importance');
+      } else {
+        // dump phase — rebuild dump cards
+        renderDumpCards();
+        if (state.tasks.length > 0) {
+          document.getElementById('phase-dump').classList.add('has-tasks');
+        }
+        showPhase('dump');
+      }
+      announce('Grid restored from file.');
+    } catch(err) {
+      announce('Could not read file. Make sure it is a valid export.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function initExportImport() {
+  document.getElementById('btn-export').addEventListener('click', exportGrid);
+  const fileInput = document.getElementById('import-file-input');
+  document.getElementById('btn-import').addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length > 0) {
+      importGrid(e.target.files[0]);
+      e.target.value = ''; // reset so same file can be re-imported
+    }
+  });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3250,9 +3503,13 @@ function initTypewriter() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 function updateDumpOverflow() {
+  const lower = document.querySelector('.dump-lower');
   const cards = document.getElementById('dump-cards');
-  if (!cards) return;
-  cards.classList.toggle('has-overflow', cards.scrollHeight > cards.clientHeight + 10);
+  if (!lower || !cards) return;
+  // Show gradient when cards approach the fixed "ready to sort" button zone (~100px from bottom)
+  const cardsBottom = cards.getBoundingClientRect().bottom;
+  const lowerBottom = lower.getBoundingClientRect().bottom;
+  lower.classList.toggle('has-overflow', lowerBottom - cardsBottom < 100);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3289,8 +3546,9 @@ function updateOverscrollVisual(activePhase, direction, noIndicator) {
       // Button scales up and brightens as you pull
       const scale = 1 + Math.min(progress, 1) * 0.15; // max 1.15x
       const opacity = 0.7 + Math.min(progress, 1) * 0.3; // 0.7 → 1.0
+      const isInFlow = navBtn.closest('.sort-section');
       navBtn.style.transition = 'none';
-      navBtn.style.transform = `translateX(-50%) scale(${scale})`;
+      navBtn.style.transform = isInFlow ? `scale(${scale})` : `translateX(-50%) scale(${scale})`;
       navBtn.style.opacity = opacity;
       // Arrow bounces down slightly
       const arrow = navBtn.querySelector('.nav-arrow');
@@ -3326,8 +3584,9 @@ function resetOverscroll(activePhase) {
   // Reset nav button styles
   const navBtn = activePhase.querySelector('.phase-nav-btn');
   if (navBtn) {
+    const isInFlow = navBtn.closest('.sort-section');
     navBtn.style.transition = 'transform 200ms ease, opacity 200ms ease, color 200ms ease';
-    navBtn.style.transform = 'translateX(-50%)';
+    navBtn.style.transform = isInFlow ? '' : 'translateX(-50%)';
     navBtn.style.opacity = '';
     navBtn.style.color = '';
     const arrow = navBtn.querySelector('.nav-arrow');
@@ -3343,8 +3602,9 @@ function resetOverscrollTransform(activePhase) {
   // Reset nav button styles
   const navBtn = activePhase.querySelector('.phase-nav-btn');
   if (navBtn) {
+    const isInFlow = navBtn.closest('.sort-section');
     navBtn.style.transition = 'transform 200ms ease, opacity 200ms ease, color 200ms ease';
-    navBtn.style.transform = 'translateX(-50%)';
+    navBtn.style.transform = isInFlow ? '' : 'translateX(-50%)';
     navBtn.style.opacity = '';
     navBtn.style.color = '';
     const arrow = navBtn.querySelector('.nav-arrow');
@@ -3381,9 +3641,9 @@ function goToPrevPhase() {
   isTransitioning = true;
 
   if (currentPhase === 'sort-urgency') {
+    showDumpFresh();
+    document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
     showPhase('dump');
-    renderDumpCards();
-    updateSortButton();
   } else if (currentPhase === 'sort-importance') {
     renderSortList('urgency');
     showPhase('sort-urgency');
@@ -3411,15 +3671,15 @@ function initPageScroll() {
     const activePhase = document.querySelector('.phase-active');
     if (!activePhase) return;
 
-    // If cursor is over a scrollable child, never trigger page overscroll
-    const scrollableChild = e.target.closest('.dump-cards, .sort-list');
+    // If cursor is over the dump card list, never trigger page overscroll
+    const scrollableChild = e.target.closest('.dump-lower');
     if (scrollableChild) {
-      const hasOverflow = scrollableChild.scrollHeight > scrollableChild.clientHeight + 5;
-      if (hasOverflow) {
-        // Card list needs scrolling — let it scroll, block page overscroll
-        return;
-      }
-      // Card list fits on screen — pass through to page overscroll
+      return;
+    }
+
+    // Dump page with no tasks — no overscroll at all
+    if (state.phase === 'dump' && state.tasks.length === 0) {
+      return;
     }
 
     const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
@@ -3519,18 +3779,15 @@ function initPageScroll() {
 
     const deltaY = touchStartY - e.touches[0].clientY; // positive = swiping up (scroll down)
 
-    // On touch: check if a scrollable child (card list) is under the finger
-    // If it has overflow and hasn't reached its edge, let it scroll naturally
-    const scrollableChild = e.target.closest('.dump-cards, .sort-list');
+    // If finger is over the dump card list, never trigger page overscroll
+    const scrollableChild = e.target.closest('.dump-lower');
     if (scrollableChild) {
-      const hasOverflow = scrollableChild.scrollHeight > scrollableChild.clientHeight + 5;
-      if (hasOverflow) {
-        const childAtBottom = scrollableChild.scrollTop + scrollableChild.clientHeight >= scrollableChild.scrollHeight - 5;
-        const childAtTop = scrollableChild.scrollTop <= 5;
-        // Only pass through to page overscroll if child is at its edge
-        if (deltaY > 0 && !childAtBottom) return; // still scrolling down within list
-        if (deltaY < 0 && !childAtTop) return;    // still scrolling up within list
-      }
+      return;
+    }
+
+    // Dump page with no tasks — no overscroll at all
+    if (state.phase === 'dump' && state.tasks.length === 0) {
+      return;
     }
 
     const isAtBottom = activePhase.scrollTop + activePhase.clientHeight >= activePhase.scrollHeight - 5;
@@ -3591,6 +3848,8 @@ function initPageScroll() {
 function init() {
   initSort();
   initToolbar();
+  initExportImport();
+  initExistingTasksLine();
   initCanvasAdd();
   initDump();
   initSortTips();
@@ -3627,6 +3886,11 @@ function init() {
       announce('Restored importance sorting session.');
     }
   } else {
+    // Dump phase — show fresh if returning with existing tasks
+    if (state.tasks.length > 0) {
+      showDumpFresh();
+      document.getElementById('phase-dump').classList.add('has-tasks');
+    }
     showPhase('dump');
     // Don't auto-focus — let the typewriter animation play
   }
@@ -3637,6 +3901,11 @@ function init() {
       const keyboardOpen = window.visualViewport.height < window.innerHeight * 0.75;
       document.body.classList.toggle('keyboard-open', keyboardOpen);
     });
+  }
+
+  // Request persistent storage so browsers are less likely to evict data
+  if (navigator.storage && navigator.storage.persist) {
+    navigator.storage.persist();
   }
 }
 
