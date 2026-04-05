@@ -869,43 +869,53 @@ html, body {
   white-space: pre-line;
 }
 
-/* ── Start fresh ── */
-.start-fresh-wrap {
+/* ── Canvas toolbar — bottom center ── */
+.canvas-toolbar {
   position: absolute;
-  bottom: 12px;
-  left: 16px;
-  z-index: 50;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 16px;
   opacity: 0;
   pointer-events: none;
   transition: opacity 200ms;
 }
-.start-fresh-wrap.visible {
+.canvas-toolbar.visible {
   opacity: 1;
   pointer-events: all;
 }
-
-#btn-start-fresh {
-  background: none;
+.toolbar-btn {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
   border: none;
-  font-family: var(--font-body);
-  font-size: 11px;
-  color: var(--sage-interactive);
+  background: var(--card-bg);
+  box-shadow: 0 2px 8px rgba(46,52,45,0.12);
+  color: var(--sage-45);
   cursor: pointer;
-  padding: 4px 0;
-  letter-spacing: 0.02em;
-  transition: color 150ms, background 150ms;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  letter-spacing: 0;
+  line-height: 1;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 18px;
+  transition: box-shadow 150ms, color 150ms;
 }
-#btn-start-fresh.confirming {
+.toolbar-btn:hover {
   color: var(--sage);
-  background: var(--sage-08);
-  border-radius: 6px;
-  padding: 4px 8px;
+  box-shadow: 0 4px 12px rgba(46,52,45,0.18);
 }
-#btn-start-fresh:hover { color: var(--sage); }
-#btn-start-fresh:focus-visible {
+.toolbar-btn:focus-visible {
   outline: 2px solid var(--sage);
-  outline-offset: 4px;
-  border-radius: 4px;
+  outline-offset: 3px;
+}
+.toolbar-btn-add {
+  line-height: 0;
 }
 
 /* ── Aria live region ── */
@@ -918,44 +928,9 @@ html, body {
   white-space: nowrap;
 }
 
-/* ── Phase 4.2: add-on-canvas button — center-bottom ── */
-.canvas-add-wrap {
-  position: absolute;
-  bottom: 60px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 200;
-}
-.canvas-add-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: none;
-  background: var(--card-bg);
-  box-shadow: 0 2px 8px rgba(46,52,45,0.12);
-  cursor: pointer;
-  font-size: 22px;
-  font-weight: 300;
-  line-height: 1;
-  color: var(--sage-45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px;
-  transition: box-shadow 150ms, color 150ms;
-}
-.canvas-add-btn:hover {
-  color: var(--sage);
-  box-shadow: 0 4px 12px rgba(46,52,45,0.18);
-}
-.canvas-add-btn:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 3px;
-}
-
 .canvas-add-input-wrap {
   position: absolute;
-  bottom: 56px;
+  bottom: 68px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 210;
@@ -973,7 +948,7 @@ html, body {
   border-bottom: 1px solid var(--sage-15);
   background: transparent;
   font-family: var(--font-body);
-  font-size: 12px;
+  font-size: 16px;
   color: var(--text);
   padding: 4px 0;
   outline: none;
@@ -1172,8 +1147,7 @@ button:focus-visible {
   .phase-nav-btn:active .nav-arrow { transform: translateY(2px); }
   .corner-label:active { color: var(--sage); }
   #btn-suggest-tasks:active { color: var(--sage); }
-  .canvas-add-btn:active { color: var(--sage); box-shadow: 0 4px 12px rgba(46,52,45,0.18); }
-  #btn-start-fresh:active { color: var(--sage); }
+  .toolbar-btn:active { color: var(--sage); box-shadow: 0 4px 12px rgba(46,52,45,0.18); }
   .map-guide-toggle:active { color: var(--sage); }
   .map-guide-close:active { color: var(--sage); }
   .corner-label { padding: 12px 16px; }
@@ -1189,9 +1163,9 @@ button:focus-visible {
     pointer-events: none;
     transition: opacity 150ms ease;
   }
-  .keyboard-open .canvas-add-wrap {
-    opacity: 0;
-    pointer-events: none;
+  .keyboard-open .canvas-toolbar {
+    opacity: 0 !important;
+    pointer-events: none !important;
   }
 }
 
@@ -1355,31 +1329,14 @@ Most important at the top.</h2>
 Start by adding what's on your mind.</p>
       </div>
 
-      <div class="canvas-add-wrap" id="canvas-add-wrap">
+      <!-- Canvas toolbar — bottom center -->
+      <div class="canvas-toolbar" id="canvas-toolbar">
         <div class="canvas-add-input-wrap" id="canvas-add-input-wrap">
           <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
         </div>
-        <button class="canvas-add-btn" id="canvas-add-btn" aria-label="Add new task to the map">+</button>
-      </div>
-
-      <!-- Phase 4.1: timeline scrubber inside canvas, bottom-right -->
-      <div class="timeline-scrubber" role="group" aria-label="Timeline history">
-        <span class="scrubber-label">Mar 20</span>
-        <div class="scrubber-track-wrap">
-          <div class="scrubber-track">
-            <div class="scrubber-fill"></div>
-          </div>
-          <div
-            class="scrubber-handle"
-            aria-hidden="true"
-          ></div>
-        </div>
-        <span class="scrubber-label">Today</span>
-      </div>
-
-      <!-- Start fresh inside scatter canvas -->
-      <div class="start-fresh-wrap" id="start-fresh-wrap">
-        <button id="btn-start-fresh" aria-label="Start fresh">start fresh</button>
+        <button class="toolbar-btn" id="btn-cleanup" aria-label="Clean up completed tasks" title="Clean up completed tasks">✦</button>
+        <button class="toolbar-btn toolbar-btn-add" id="canvas-add-btn" aria-label="Add new tasks" title="Add new tasks"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="3" x2="10" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+        <button class="toolbar-btn" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top">↑</button>
       </div>
     </div>
   </section>
@@ -1479,8 +1436,8 @@ function showPhase(targetPhase) {
 
   state.phase = targetPhase;
 
-  const sfWrap = document.getElementById('start-fresh-wrap');
-  if (sfWrap) sfWrap.classList.toggle('visible', targetPhase === 'scatter');
+  const toolbar = document.getElementById('canvas-toolbar');
+  if (toolbar) toolbar.classList.toggle('visible', targetPhase === 'scatter');
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2650,6 +2607,20 @@ function initCanvasAdd() {
     }
   });
 
+  // Close on blur and reset iOS zoom
+  addInput.addEventListener('blur', () => {
+    setTimeout(() => {
+      addWrap.classList.remove('visible');
+    }, 150);
+    const vp = document.querySelector('meta[name=viewport]');
+    if (vp) {
+      vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+      setTimeout(() => {
+        vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+      }, 100);
+    }
+  });
+
   document.addEventListener('click', (e) => {
     if (addWrap.classList.contains('visible') &&
         !addWrap.contains(e.target) && e.target !== addBtn) {
@@ -2957,66 +2928,87 @@ function saveState() {}
 function loadSavedState() { return false; }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Start fresh
+// Canvas toolbar: Clean up, Back to top
 // ──────────────────────────────────────────────────────────────────────────────
 
-function doStartFresh() {
-  state.tasks = [];
-  state.urgencyOrder = [];
-  state.importanceOrder = [];
-  state.cardPositions = {};
-  state.done = new Set();
-  idCounter = 0;
-
-  // Clear canvas
-  document.getElementById('scatter-canvas').querySelectorAll('.canvas-card').forEach(c => c.remove());
-  // Reset lines
-  document.querySelectorAll('.q-line').forEach(l => {
-    l.classList.remove('drawn');
-    l.style.strokeDashoffset = l.style.strokeDasharray;
-  });
-
-  try { localStorage.removeItem(LS_KEY); } catch(e) {}
-
-  // Re-init dump
-  document.getElementById('dump-cards').innerHTML = '';
-  document.getElementById('dump-input').value = '';
-  document.getElementById('phase-dump').classList.remove('has-tasks');
-  const suggestBtn = document.getElementById('btn-suggest-tasks');
-  if (suggestBtn) { suggestBtn.style.opacity = ''; suggestBtn.style.pointerEvents = ''; }
-
-  updateSortButton();
-  showPhase('dump');
-  document.getElementById('dump-input').focus();
-  announce('Starting fresh. Add your tasks.');
-}
-
-function initStartFresh() {
-  const btn = document.getElementById('btn-start-fresh');
-  let confirmTimer = null;
-
-  function resetConfirmState() {
-    btn.textContent = 'start fresh';
-    btn.classList.remove('confirming');
-    btn.setAttribute('aria-label', 'Start fresh — tap again to confirm');
-    clearTimeout(confirmTimer);
-    confirmTimer = null;
+function doCleanup() {
+  const doneIds = [...state.done];
+  if (doneIds.length === 0) {
+    announce('Nothing to clean up.');
+    return;
   }
 
-  btn.addEventListener('click', () => {
-    if (btn.classList.contains('confirming')) {
-      resetConfirmState();
-      doStartFresh();
-    } else {
-      btn.textContent = 'tap again to confirm';
-      btn.classList.add('confirming');
-      btn.setAttribute('aria-label', 'Tap again to confirm start fresh');
-      announce('Tap again to confirm. This will clear all tasks.');
-      confirmTimer = setTimeout(() => {
-        resetConfirmState();
-      }, 3000);
-    }
+  const canvas = document.getElementById('scatter-canvas');
+  const rm = prefersReducedMotion();
+
+  // Fade out done cards
+  const doneCards = doneIds.map(id => canvas.querySelector(`.canvas-card[data-id="${id}"]`)).filter(Boolean);
+  doneCards.forEach(c => {
+    c.style.transition = rm ? 'none' : 'opacity 250ms ease';
+    c.style.opacity = '0';
   });
+
+  const afterFade = () => {
+    // Remove from DOM
+    doneCards.forEach(c => c.remove());
+
+    // Update state
+    state.tasks = state.tasks.filter(t => !state.done.has(t.id));
+    state.urgencyOrder = state.urgencyOrder.filter(id => !state.done.has(id));
+    state.importanceOrder = state.importanceOrder.filter(id => !state.done.has(id));
+    state.done.clear();
+
+    // Recompute positions for remaining tasks
+    const canvasRect = canvas.getBoundingClientRect();
+    if (canvasRect.width > 0 && state.tasks.length > 0) {
+      state.cardPositions = computeCanvasPositions(canvasRect.width, canvasRect.height);
+
+      // Animate remaining cards to new positions
+      const remaining = canvas.querySelectorAll('.canvas-card');
+      remaining.forEach(card => {
+        const id = card.dataset.id;
+        const pos = state.cardPositions[id];
+        if (pos) {
+          card.style.transition = rm ? 'none' : 'left 400ms cubic-bezier(0.25, 0.1, 0.25, 1), top 400ms cubic-bezier(0.25, 0.1, 0.25, 1)';
+          card.style.left = pos.x + 'px';
+          card.style.top = pos.y + 'px';
+        }
+      });
+    } else {
+      state.cardPositions = {};
+    }
+
+    // Show empty state if no tasks left
+    const emptyEl = document.getElementById('empty-state');
+    if (emptyEl) emptyEl.classList.toggle('visible', state.tasks.length === 0);
+
+    saveState();
+    announce(`Cleaned up ${doneIds.length} completed ${doneIds.length === 1 ? 'task' : 'tasks'}.`);
+  };
+
+  if (rm) {
+    afterFade();
+  } else {
+    setTimeout(afterFade, 280);
+  }
+}
+
+function doBackToTop() {
+  // Re-render dump cards with current tasks
+  renderDumpCards();
+  updateSortButton();
+  document.getElementById('phase-dump').classList.toggle('has-tasks', state.tasks.length > 0);
+
+  showPhase('dump');
+  announce('Back to the beginning. Your tasks are still here.');
+}
+
+function initToolbar() {
+  const cleanupBtn = document.getElementById('btn-cleanup');
+  const backBtn = document.getElementById('btn-back-to-top');
+
+  if (cleanupBtn) cleanupBtn.addEventListener('click', doCleanup);
+  if (backBtn) backBtn.addEventListener('click', doBackToTop);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3598,7 +3590,7 @@ function initPageScroll() {
 
 function init() {
   initSort();
-  initStartFresh();
+  initToolbar();
   initCanvasAdd();
   initDump();
   initSortTips();
