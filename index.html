@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Eisenhower Matrix — Personal Clarity Tool</title>
+<title>Priority Grid</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -734,7 +734,7 @@ html, body {
 /* Corner popovers */
 .corner-popover {
   position: absolute;
-  background: var(--sage-08);
+  background: #edeee7;
   border-radius: 8px;
   padding: 10px 14px;
   font-family: var(--font-body);
@@ -1049,6 +1049,18 @@ html, body {
 .toolbar-btn-add {
   line-height: 0;
 }
+.toolbar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.toolbar-label {
+  font-size: 11px;
+  color: var(--sage-45);
+  line-height: 1;
+  letter-spacing: 0.01em;
+}
 
 .canvas-add-input-wrap {
   position: absolute;
@@ -1080,9 +1092,7 @@ html, body {
   color: var(--text-muted);
 }
 .canvas-add-input:focus-visible {
-  outline: 2px solid var(--sage);
-  outline-offset: 2px;
-  border-radius: 4px;
+  outline: none;
 }
 
 /* ── Typewriter animation for hero input ── */
@@ -1298,12 +1308,13 @@ button:focus-visible {
   .axis-important { top: 6px; }
   .dump-cards { gap: 4px; }
   .sort-list { gap: 4px; }
+  .toolbar-label { display: none; }
 }
 </style>
 </head>
 <body>
 
-<h1 class="sr-only">Your clarity map</h1>
+<h1 class="sr-only">Your priority grid</h1>
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <div class="flow-container">
@@ -1332,18 +1343,19 @@ button:focus-visible {
           <span class="dump-input-hint">Dump Tasks &#8629;</span>
           <div class="input-underline"></div>
         </div>
-        <button class="existing-tasks-line" id="existing-tasks-line" aria-label="Show current tasks">show current tasks</button>
+        <button class="existing-tasks-line" id="existing-tasks-line" aria-label="Show my tasks">show my tasks</button>
       </div>
 
       <div class="dump-lower">
         <div class="dump-cards" id="dump-cards" role="list" aria-label="Tasks added"></div>
         <div class="dump-footer">
-          <button class="map-guide-toggle" id="map-guide-toggle">what is this method?</button>
+          <button class="map-guide-toggle" id="map-guide-toggle">how does this work?</button>
           <button id="btn-suggest-tasks" aria-label="Suggest example tasks">suggest tasks</button>
         </div>
         <div class="map-guide-content" id="map-guide-content">
-          <p>This method gives everything a relative position: compared to the rest of your list, how pressing is this? How meaningful?</p>
-          <p>Start from the top-right corner and work your way down-left. The strikethroughs accumulate — that record is worth keeping.</p>
+          <p>Once everything is out of your head, it's easier to see what's going on.</p>
+          <p>Two quick sorts, one for urgency and one for what matters, spread your tasks across a grid.</p>
+          <p>It's clearer to see what needs attention now, what can wait, and what you can let go of.</p>
           <!-- close button removed — user clicks toggle again to collapse -->
         </div>
       </div>
@@ -1359,14 +1371,14 @@ button:focus-visible {
   ═══════════════════════════════════════ -->
   <section id="phase-sort-urgency" class="phase phase-pending sort-section sort-pass-urgency" aria-label="Sort tasks by urgency" aria-hidden="true">
     <div class="sort-inner" id="urgency-inner">
-      <div class="sort-progress" aria-live="polite">sorting urgency &#8212; 1 of 2</div>
-      <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#128293;</span> Drag to order by urgency.
-Most urgent at the top.</h2>
+      <div class="sort-progress" aria-live="polite">step 1 of 2 · urgency</div>
+      <h2 class="sort-header">Drag to rank by urgency.
+Most time-sensitive at the top.</h2>
       <div
         id="sort-list-urgency"
         class="sort-list"
         role="list"
-        aria-label="Tasks to sort by urgency &#8212; drag to reorder"
+        aria-label="Tasks to sort by urgency. Drag to reorder."
       ></div>
       <div class="sort-tip" id="sort-tip-urgency" aria-live="polite">
         <span class="sort-tip-text"></span>
@@ -1383,14 +1395,14 @@ Most urgent at the top.</h2>
   ═══════════════════════════════════════ -->
   <section id="phase-sort-importance" class="phase phase-pending sort-section sort-pass-importance" aria-label="Sort tasks by importance" aria-hidden="true">
     <div class="sort-inner" id="importance-inner">
-      <div class="sort-progress" aria-live="polite">sorting importance &#8212; 2 of 2</div>
-      <h2 class="sort-header"><span aria-hidden="true" style="opacity:0.4">&#127807;</span> Now order by importance.
-Most important at the top.</h2>
+      <div class="sort-progress" aria-live="polite">step 2 of 2 · importance</div>
+      <h2 class="sort-header">Drag to rank by importance.
+What matters most to you goes at the top.</h2>
       <div
         id="sort-list-importance"
         class="sort-list"
         role="list"
-        aria-label="Tasks to sort by importance &#8212; drag to reorder"
+        aria-label="Tasks to sort by importance. Drag to reorder."
       ></div>
       <div class="sort-tip" id="sort-tip-importance" aria-live="polite">
         <span class="sort-tip-text"></span>
@@ -1405,8 +1417,8 @@ Most important at the top.</h2>
   <!-- ═══════════════════════════════════════
        PHASE 3: SCATTER
   ═══════════════════════════════════════ -->
-  <section id="phase-scatter" class="phase phase-pending" aria-label="Your tasks on the map" aria-hidden="true">
-    <h2 class="sr-only">Your map</h2>
+  <section id="phase-scatter" class="phase phase-pending" aria-label="Your tasks on the grid" aria-hidden="true">
+    <h2 class="sr-only">Your grid</h2>
     <div class="scatter-canvas" id="scatter-canvas">
       <svg class="quadrant-svg" id="quadrant-svg" aria-hidden="true">
         <line id="vline-up" class="q-line" x1="50%" y1="50%" x2="50%" y2="0%"/>
@@ -1423,9 +1435,9 @@ Most important at the top.</h2>
       <button class="corner-label now" aria-label="Now — urgent and important">Now</button>
       <div class="corner-popover now-popover" aria-hidden="true">These need your attention today. Crises, hard deadlines, urgent problems. Do them first, then move on.</div>
       <button class="corner-label soon" aria-label="Soon — important, not urgent">Soon</button>
-      <div class="corner-popover soon-popover" aria-hidden="true">Important but not pressing. Schedule time for these — they build the life you actually want.</div>
+      <div class="corner-popover soon-popover" aria-hidden="true">Important but not pressing. Schedule time for these. They pay off most in the long run.</div>
       <button class="corner-label quick" aria-label="Quick — urgent, not important">Quick</button>
-      <div class="corner-popover quick-popover" aria-hidden="true">Feels urgent but isn't meaningful. Do them fast without overthinking, delegate, or batch them.</div>
+      <div class="corner-popover quick-popover" aria-hidden="true">Feels urgent but won't matter much later. Knock these out quickly, hand them off, or group similar ones together.</div>
       <button class="corner-label later" aria-label="Later — not urgent, not important">Later</button>
       <div class="corner-popover later-popover" aria-hidden="true">Neither urgent nor important. Reconsider whether these belong on your list at all, or let them go.</div>
 
@@ -1448,13 +1460,16 @@ Start by adding what's on your mind.</p>
           <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
         </div>
         <div class="toolbar-item">
-          <button class="toolbar-btn" id="btn-cleanup" aria-label="Clean up completed tasks" title="Clean up completed tasks">✦</button>
+          <button class="toolbar-btn toolbar-btn-add" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="16" x2="10" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><polyline points="5,9 10,4 15,9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
+          <span class="toolbar-label">back to top</span>
         </div>
         <div class="toolbar-item">
           <button class="toolbar-btn toolbar-btn-add" id="canvas-add-btn" aria-label="Add new tasks" title="Add new tasks"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="3" x2="10" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="3" y1="10" x2="17" y2="10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          <span class="toolbar-label">add</span>
         </div>
         <div class="toolbar-item">
-          <button class="toolbar-btn" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top">↑</button>
+          <button class="toolbar-btn toolbar-btn-add" id="btn-cleanup" aria-label="Clean up completed tasks" title="Clean up completed tasks"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="2" x2="10" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="6" y1="12" x2="14" y2="12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="7" y1="12" x2="6" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="12" x2="10" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="13" y1="12" x2="14" y2="18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+          <span class="toolbar-label">clean up</span>
         </div>
       </div>
 
@@ -1478,7 +1493,7 @@ Start by adding what's on your mind.</p>
 const SAMPLE_TASKS = [
   { text: "Finish quarterly report", urgency: 1, importance: 1 },  // Now (top-right)
   { text: "Call back Dr. Chen", urgency: 2, importance: 2 },       // Now-ish
-  { text: "Start exercise routine", urgency: 7, importance: 1 },   // Soon (top-left) — NOT urgent but important
+  { text: "Go outdoor running", urgency: 7, importance: 1 },       // Soon (top-left) — NOT urgent but important
   { text: "Research school options", urgency: 8, importance: 3 },   // Soon
   { text: "Reply to group chat", urgency: 1, importance: 7 },      // Quick (bottom-right) — urgent but NOT important
   { text: "Return Amazon package", urgency: 3, importance: 8 },    // Quick
@@ -1771,7 +1786,7 @@ function showDumpFresh() {
   cardsEl.innerHTML = '';
 
   // Show toggle link, reset to "show" state
-  line.textContent = 'show current tasks';
+  line.textContent = 'show my tasks';
   line.style.display = 'block';
 
   // Update sort button to reflect total count
@@ -1796,7 +1811,7 @@ function initExistingTasksLine() {
       cardsEl.querySelectorAll('.dump-card').forEach(card => {
         if (oldTaskIds.has(card.dataset.id)) card.remove();
       });
-      line.textContent = 'show current tasks';
+      line.textContent = 'show my tasks';
       updateDumpOverflow();
       // Restart typewriter if no new cards remain visible
       const input = document.getElementById('dump-input');
@@ -1808,7 +1823,7 @@ function initExistingTasksLine() {
       // Currently hidden — show all tasks (old + new)
       renderDumpCards();
       hiddenTaskIds.clear();
-      line.textContent = 'hide current tasks';
+      line.textContent = 'hide my tasks';
     }
     updateSortButton();
   });
@@ -1844,7 +1859,7 @@ function transitionToSortUrgency() {
   renderSortList('urgency');
   showPhase('sort-urgency');
   saveState();
-  announce('Sorting phase. Drag tasks to order by urgency. Most urgent at the top.');
+  announce('Sorting phase. Drag to rank by urgency. Most time-sensitive at the top.');
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2247,7 +2262,7 @@ function onUrgencyDone() {
   renderSortList('importance');
   showPhase('sort-importance');
   saveState();
-  announce('Now sorting importance. Drag tasks to order by importance. Most important at the top.');
+  announce('Sorting importance. Drag to rank by importance. What matters most goes at the top.');
 }
 
 function onImportanceDone() {
@@ -2363,7 +2378,7 @@ function triggerScatter() {
       setTimeout(() => {
         animateCardsFlying(sortRects, rm);
         setTimeout(() => {
-          announce('Tasks scattered on the map. Click any task to mark it done.');
+          announce('Tasks placed on the grid. Click any task to mark it done.');
         }, rm ? 200 : 1400);
       }, rm ? 0 : 300);
     });
@@ -2415,9 +2430,11 @@ function buildCanvasCards(rm) {
     let clickTimer = null;
     card.addEventListener('click', (e) => {
       if (card._suppressNextClick) { card._suppressNextClick = false; return; }
-      if (card.querySelector('input')) return;
+      if (card._isEditing) return;
+      if (card.querySelector('input') || card.querySelector('[contenteditable="true"]')) return;
       clearTimeout(clickTimer);
       clickTimer = setTimeout(() => {
+        if (card._isEditing) return;
         onCanvasCardTap(card, task.id);
       }, 250);
     });
@@ -2433,6 +2450,7 @@ function buildCanvasCards(rm) {
       const originalText = textEl.textContent;
       const taskId = card.dataset.id;
 
+      card._isEditing = true;
       textEl.setAttribute('contenteditable', 'true');
       textEl.style.outline = 'none';
       textEl.focus();
@@ -2445,26 +2463,30 @@ function buildCanvasCards(rm) {
       sel.removeAllRanges();
       sel.addRange(range);
 
+      function endEdit() {
+        setTimeout(() => { card._isEditing = false; }, 350);
+        resetIOSZoom();
+      }
+
       function save() {
         textEl.setAttribute('contenteditable', 'false');
-        // Normalize: convert <br> and <div> to \n, then get plain text for state
         const html = textEl.innerHTML;
         const plainText = textEl.textContent.trim() || originalText;
         if (plainText !== originalText) {
           const t = state.tasks.find(t => t.id === taskId);
           if (t) t.text = plainText;
         }
-        // Preserve line breaks in display by keeping innerHTML with <br> tags
-        // Clean up: normalize divs/ps from contenteditable to simple <br>
         const cleaned = html.replace(/<div>/gi, '<br>').replace(/<\/div>/gi, '').replace(/<p>/gi, '<br>').replace(/<\/p>/gi, '').replace(/^<br>/, '').trim();
         textEl.innerHTML = cleaned || escapeHtml(originalText);
         card.setAttribute('aria-label', `${plainText} — click to toggle done`);
         requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+        endEdit();
       }
 
       function cancel() {
         textEl.setAttribute('contenteditable', 'false');
         textEl.textContent = originalText;
+        endEdit();
       }
 
       textEl.addEventListener('keydown', function handler(ev) {
@@ -2603,6 +2625,16 @@ function animateCardsFlying(sortRects, rm) {
 // Canvas card interactions
 // ──────────────────────────────────────────────────────────────────────────────
 
+function resetIOSZoom() {
+  const vp = document.querySelector('meta[name=viewport]');
+  if (vp) {
+    vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
+    setTimeout(() => {
+      vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
+    }, 100);
+  }
+}
+
 function onCanvasCardTap(card, id) {
   const isDone = state.done.has(id);
   const text = getTaskText(id);
@@ -2612,9 +2644,8 @@ function onCanvasCardTap(card, id) {
     card.classList.remove('done');
     card.setAttribute('aria-pressed', 'false');
     card.setAttribute('aria-label', `${text} — click to toggle done`);
-    // Set inline strokeDashoffset to full length (hidden)
     if (strikePath) {
-      const len = strikePath.getTotalLength?.() || parseFloat(strikePath.style.strokeDasharray) || 100;
+      const len = parseFloat(strikePath.style.strokeDasharray) || strikePath.getTotalLength?.() || 100;
       strikePath.style.strokeDashoffset = len + '';
     }
     announce(`${text} — unmarked`);
@@ -2734,18 +2765,10 @@ function initCanvasAdd() {
 
   // Close on blur and reset iOS zoom
   addInput.addEventListener('blur', () => {
-    // Small delay so click-on-addBtn doesn't race with blur
     setTimeout(() => {
       addWrap.classList.remove('visible');
     }, 150);
-    // Reset any iOS auto-zoom that may have occurred
-    const vp = document.querySelector('meta[name=viewport]');
-    if (vp) {
-      vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
-      setTimeout(() => {
-        vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
-      }, 100);
-    }
+    resetIOSZoom();
   });
 
   document.addEventListener('click', (e) => {
@@ -2802,9 +2825,11 @@ function addTaskToCanvas(text) {
   let clickTimer = null;
   card.addEventListener('click', (e) => {
     if (card._suppressNextClick) { card._suppressNextClick = false; return; }
-    if (card.querySelector('input')) return;
+    if (card._isEditing) return;
+    if (card.querySelector('input') || card.querySelector('[contenteditable="true"]')) return;
     clearTimeout(clickTimer);
     clickTimer = setTimeout(() => {
+      if (card._isEditing) return;
       onCanvasCardTap(card, task.id);
     }, 250);
   });
@@ -2820,6 +2845,7 @@ function addTaskToCanvas(text) {
     const originalText = textEl.textContent;
     const taskId = card.dataset.id;
 
+    card._isEditing = true;
     textEl.setAttribute('contenteditable', 'true');
     textEl.style.outline = 'none';
     textEl.focus();
@@ -2830,6 +2856,11 @@ function addTaskToCanvas(text) {
     const sel = window.getSelection();
     sel.removeAllRanges();
     sel.addRange(range);
+
+    function endEdit() {
+      setTimeout(() => { card._isEditing = false; }, 350);
+      resetIOSZoom();
+    }
 
     function save() {
       textEl.setAttribute('contenteditable', 'false');
@@ -2843,11 +2874,13 @@ function addTaskToCanvas(text) {
       textEl.innerHTML = cleaned || escapeHtml(originalText);
       card.setAttribute('aria-label', `${plainText} — click to toggle done`);
       requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+      endEdit();
     }
 
     function cancel() {
       textEl.setAttribute('contenteditable', 'false');
       textEl.textContent = originalText;
+      endEdit();
     }
 
     textEl.addEventListener('keydown', function handler(ev) {
@@ -2912,7 +2945,7 @@ function addTaskToCanvas(text) {
   }));
 
   saveState();
-  announce(`Added ${task.text} to the map.`);
+  announce(`Added ${task.text} to the grid.`);
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -2931,7 +2964,7 @@ function setupLongPressDrag(card, id) {
   const SNAP_THRESHOLD = 20;
 
   function onStart(e) {
-    if (card.querySelector('input')) return;
+    if (card.querySelector('input') || card.querySelector('[contenteditable="true"]')) return;
     if (e.button !== undefined && e.button !== 0) return;
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
@@ -3269,19 +3302,19 @@ function initExportImport() {
 // ──────────────────────────────────────────────────────────────────────────────
 
 const URGENCY_TIPS = [
-  "Go with your gut. The first instinct is almost always right.",
-  "If two feel similar, place the one making more noise in your head higher.",
-  "Urgency has a clock \u2014 if I ignore this for a week, does something go wrong?",
-  "A rough ranking is enough. You can adjust on the map later.",
-  "Sort quickly. A rough map seen fast is more useful than a perfect map seen never."
+  "If I ignore this for a week, does something go wrong? That\u2019s urgency.",
+  "A rough ranking is enough. You can adjust later.",
+  "If two feel similar, put the one nagging you more above the other.",
+  "Trust your first instinct. You can always move things later.",
+  "Sort quickly. A rough result you see now beats a perfect one you never finish."
 ];
 
 const IMPORTANCE_TIPS = [
-  "Importance has weight \u2014 does this connect to something you genuinely care about?",
-  "The task that keeps surfacing in your mind, unprompted, is asking to be ranked higher.",
-  "Important work is rarely urgent. Urgent work is rarely important.",
-  "Ask yourself: does completing this move something meaningful forward?",
-  "Notice if everything feels important. That feeling is worth sitting with."
+  "Sort by what matters to you, deadlines aside.",
+  "Does this connect to something you actually care about?",
+  "The task that keeps coming back to mind probably belongs higher.",
+  "Does finishing this actually move something forward?",
+  "If everything feels important, slow down."
 ];
 
 let urgencyTipIdx = 0;
@@ -3400,7 +3433,7 @@ function initMapGuide() {
 const TYPEWRITER_TEXTS = [
   "finish the quarterly report",
   "call back Dr. Chen",
-  "start exercising regularly",
+  "go outdoor running",
   "reply to the group chat",
   "research school options",
 ];
