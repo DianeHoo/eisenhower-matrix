@@ -774,6 +774,9 @@ html, body {
   white-space: normal;
   word-break: break-word;
   max-width: 200px;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
   transition: box-shadow 180ms ease, background 150ms ease;
   z-index: 1;
 }
@@ -782,7 +785,28 @@ html, body {
   .canvas-card:hover {
     background: #fafaf5;
     box-shadow: 0 2px 8px rgba(46, 52, 45, 0.10);
-    cursor: grab;
+  }
+}
+
+.canvas-card .canvas-handle {
+  color: var(--sage-25);
+  font-size: 14px;
+  line-height: 1;
+  cursor: grab;
+  padding: 8px 2px 8px 6px;
+  margin: -8px -10px -8px 0;
+  touch-action: none;
+  opacity: 0;
+  transition: opacity 150ms ease;
+  flex-shrink: 0;
+}
+.canvas-card:hover .canvas-handle { opacity: 1; }
+.canvas-card .canvas-handle:active { cursor: grabbing; }
+@media (pointer: coarse) {
+  .canvas-card .canvas-handle {
+    opacity: 1;
+    padding: 15px 6px 15px 12px;
+    margin: -15px -10px -15px 0;
   }
 }
 
@@ -1286,6 +1310,10 @@ button:focus-visible {
     opacity: 0 !important;
     pointer-events: none !important;
   }
+  .keyboard-open .canvas-add-input-wrap {
+    bottom: auto;
+    top: 40%;
+  }
 }
 
 /* ── Mobile: narrow screens ── */
@@ -1297,7 +1325,7 @@ button:focus-visible {
   .sort-inner > .sort-tip { width: min(520px, 100% - 32px); }
   .sort-header { font-size: 16px !important; }
   .canvas-card { max-width: 160px; }
-  .corner-label { font-size: 12px; padding: 8px 10px; }
+  .corner-label { font-size: 12px; padding: 12px 14px; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
   .corner-label.now, .corner-label.soon { top: 8px; }
   .corner-label.quick, .corner-label.later { bottom: 28px; }
   .corner-label.now, .corner-label.quick { right: 8px; }
@@ -1899,6 +1927,7 @@ function renderSortList(pass) {
     // ── Double-click to edit ──
     card.addEventListener('dblclick', (e) => {
       e.stopPropagation();
+      if (card.querySelector('.sort-edit-input')) return; // guard against native+synthetic dblclick double-fire
       const textEl = card.querySelector('.card-text');
       const originalText = textEl.textContent;
       const taskId = card.dataset.id;
@@ -1913,6 +1942,7 @@ function renderSortList(pass) {
       textEl.textContent = '';
       textEl.appendChild(input);
       input.focus();
+      resetIOSZoom();
       // Place cursor at end instead of selecting all
       input.setSelectionRange(input.value.length, input.value.length);
 
@@ -1929,6 +1959,7 @@ function renderSortList(pass) {
         const finalText = newText || originalText;
         textEl.textContent = finalText;
         input.remove();
+        resetIOSZoom();
         // Update aria-label
         const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
         const pos = order.indexOf(taskId);
@@ -1938,6 +1969,7 @@ function renderSortList(pass) {
       function cancel() {
         textEl.textContent = originalText;
         input.remove();
+        resetIOSZoom();
       }
 
       input.addEventListener('keydown', (ev) => {
@@ -2237,16 +2269,16 @@ function onSortKeyDown(e, id, pass) {
 function initSort() {
   // Urgency done
   const btnUrgencyDone = document.getElementById('btn-urgency-done');
-  btnUrgencyDone.addEventListener('click', onUrgencyDone);
+  btnUrgencyDone.addEventListener('click', () => { if (!isTransitioning) onUrgencyDone(); });
   btnUrgencyDone.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onUrgencyDone(); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isTransitioning) onUrgencyDone(); }
   });
 
   // Importance done
   const btnImportanceDone = document.getElementById('btn-importance-done');
-  btnImportanceDone.addEventListener('click', onImportanceDone);
+  btnImportanceDone.addEventListener('click', () => { if (!isTransitioning) onImportanceDone(); });
   btnImportanceDone.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onImportanceDone(); }
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); if (!isTransitioning) onImportanceDone(); }
   });
 
 }
@@ -2407,6 +2439,7 @@ function buildCanvasCards(rm) {
     // Phase 1.3: SVG with viewBox, width/height attributes
     card.innerHTML = `
       <span class="card-text">${escapeHtml(task.text)}</span>
+      <span class="canvas-handle" aria-hidden="true">\u2807</span>
       <div class="card-strike" aria-hidden="true">
         <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
       </div>
@@ -2436,7 +2469,7 @@ function buildCanvasCards(rm) {
       clickTimer = setTimeout(() => {
         if (card._isEditing) return;
         onCanvasCardTap(card, task.id);
-      }, 250);
+      }, 300);
     });
 
     card.addEventListener('dblclick', (e) => {
@@ -2444,7 +2477,7 @@ function buildCanvasCards(rm) {
       clearTimeout(clickTimer);
       card._suppressNextClick = true;
       setTimeout(() => { card._suppressNextClick = false; }, 300);
-
+      if (card.classList.contains('done')) return; // done: dblclick does nothing
       const textEl = card.querySelector('.card-text');
       if (textEl.getAttribute('contenteditable') === 'true') return;
       const originalText = textEl.textContent;
@@ -2454,6 +2487,8 @@ function buildCanvasCards(rm) {
       textEl.setAttribute('contenteditable', 'true');
       textEl.style.outline = 'none';
       textEl.focus();
+      resetIOSZoom();
+      scrollCardIntoKeyboardView(card);
 
       // Place cursor at end
       const range = document.createRange();
@@ -2465,6 +2500,7 @@ function buildCanvasCards(rm) {
 
       function endEdit() {
         setTimeout(() => { card._isEditing = false; }, 350);
+        restoreCardPosition(card, taskId);
         resetIOSZoom();
       }
 
@@ -2480,6 +2516,7 @@ function buildCanvasCards(rm) {
         textEl.innerHTML = cleaned || escapeHtml(originalText);
         card.setAttribute('aria-label', `${plainText} — click to toggle done`);
         requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+        saveState();
         endEdit();
       }
 
@@ -2537,6 +2574,7 @@ function buildCanvasCards(rm) {
         card.style.left = x + 'px';
         card.style.top  = y + 'px';
         state.cardPositions[task.id] = { x, y };
+        saveState();
         announce(`${task.text} moved to ${Math.round(x)}, ${Math.round(y)}`);
       }
     });
@@ -2624,6 +2662,33 @@ function animateCardsFlying(sortRects, rm) {
 // ──────────────────────────────────────────────────────────────────────────────
 // Canvas card interactions
 // ──────────────────────────────────────────────────────────────────────────────
+
+// Temporarily reposition a canvas card into view when keyboard is open (mobile)
+function scrollCardIntoKeyboardView(card) {
+  if (!window.visualViewport) return;
+  const vvH = window.visualViewport.height;
+  const fullH = window.innerHeight;
+  if (vvH >= fullH * 0.85) return; // keyboard not open
+  const cardTop = parseFloat(card.style.top) || 0;
+  const safeMax = vvH - 60; // keep card above keyboard with margin
+  if (cardTop > safeMax) {
+    card._savedTop = cardTop;
+    card.style.transition = 'top 200ms ease';
+    card.style.top = Math.max(40, safeMax) + 'px';
+    setTimeout(() => { card.style.transition = ''; }, 220);
+  }
+}
+
+function restoreCardPosition(card, taskId) {
+  if (card._savedTop !== undefined) {
+    const rm = prefersReducedMotion();
+    card.style.transition = rm ? 'none' : 'top 200ms ease';
+    card.style.top = card._savedTop + 'px';
+    state.cardPositions[taskId] = { x: parseFloat(card.style.left), y: card._savedTop };
+    delete card._savedTop;
+    setTimeout(() => { card.style.transition = ''; }, 220);
+  }
+}
 
 function resetIOSZoom() {
   const vp = document.querySelector('meta[name=viewport]');
@@ -2805,6 +2870,7 @@ function addTaskToCanvas(text) {
 
   card.innerHTML = `
     <span class="card-text">${escapeHtml(task.text)}</span>
+    <span class="canvas-handle" aria-hidden="true">\u2807</span>
     <div class="card-strike" aria-hidden="true">
       <svg width="100%" height="100%" preserveAspectRatio="none" overflow="visible"><path class="strike-path" d=""/></svg>
     </div>
@@ -2839,7 +2905,7 @@ function addTaskToCanvas(text) {
     clearTimeout(clickTimer);
     card._suppressNextClick = true;
     setTimeout(() => { card._suppressNextClick = false; }, 300);
-
+    if (card.classList.contains('done')) return; // done: dblclick does nothing
     const textEl = card.querySelector('.card-text');
     if (textEl.getAttribute('contenteditable') === 'true') return;
     const originalText = textEl.textContent;
@@ -2849,6 +2915,8 @@ function addTaskToCanvas(text) {
     textEl.setAttribute('contenteditable', 'true');
     textEl.style.outline = 'none';
     textEl.focus();
+    resetIOSZoom();
+    scrollCardIntoKeyboardView(card);
 
     const range = document.createRange();
     range.selectNodeContents(textEl);
@@ -2859,6 +2927,7 @@ function addTaskToCanvas(text) {
 
     function endEdit() {
       setTimeout(() => { card._isEditing = false; }, 350);
+      restoreCardPosition(card, taskId);
       resetIOSZoom();
     }
 
@@ -2874,6 +2943,7 @@ function addTaskToCanvas(text) {
       textEl.innerHTML = cleaned || escapeHtml(originalText);
       card.setAttribute('aria-label', `${plainText} — click to toggle done`);
       requestAnimationFrame(() => requestAnimationFrame(() => updateStrikePath(card)));
+      saveState();
       endEdit();
     }
 
@@ -2895,6 +2965,7 @@ function addTaskToCanvas(text) {
   // Double-tap fallback for mobile
   let lastTapTime = 0;
   card.addEventListener('pointerup', (e) => {
+    if (card._suppressNextClick) return; // guard against false dblclick after drag
     if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
     const now = Date.now();
     if (now - lastTapTime < 300) {
@@ -2930,9 +3001,14 @@ function addTaskToCanvas(text) {
       card.style.left = cx + 'px';
       card.style.top  = cy + 'px';
       state.cardPositions[task.id] = { x: cx, y: cy };
+      saveState();
       announce(`${task.text} moved to ${Math.round(cx)}, ${Math.round(cy)}`);
     }
   });
+
+  // Hide empty state when adding a card
+  const emptyEl = document.getElementById('empty-state');
+  if (emptyEl) emptyEl.classList.remove('visible');
 
   canvas.appendChild(card);
 
@@ -2953,127 +3029,84 @@ function addTaskToCanvas(text) {
 // ──────────────────────────────────────────────────────────────────────────────
 
 function setupLongPressDrag(card, id) {
-  let pressTimer = null;
   let isDragging = false;
   let startX, startY, startLeft, startTop;
-  let pointerId = null;
-  let moved = false;
 
-  const LONG_PRESS_MS = 200;
-  const MOVEMENT_TOLERANCE = 14;
-  const SNAP_THRESHOLD = 20;
+  const DRAG_THRESHOLD = 4;
 
-  function onStart(e) {
-    if (card.querySelector('input') || card.querySelector('[contenteditable="true"]')) return;
+  function onHandleDown(e) {
     if (e.button !== undefined && e.button !== 0) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    e.preventDefault(); // prevent text selection
+    e.stopPropagation(); // don't trigger card's pointerdown
 
-    startX = clientX;
-    startY = clientY;
+    startX = e.clientX;
+    startY = e.clientY;
     startLeft = parseFloat(card.style.left) || 0;
     startTop = parseFloat(card.style.top) || 0;
-    moved = false;
     isDragging = false;
 
-    if (e.pointerId !== undefined) pointerId = e.pointerId;
+    card.setPointerCapture(e.pointerId);
+    card._suppressNextClick = true;
 
-    pressTimer = setTimeout(() => {
-      if (!moved) {
-        isDragging = true;
-        canvasDragActive = true;
-        card._suppressNextClick = true;
-        card.classList.add('grabbing');
-
-        if (e.pointerId !== undefined) card.setPointerCapture(e.pointerId);
-
-        const rm = prefersReducedMotion();
-        if (!rm) {
-          card.style.transition = 'box-shadow 180ms ease-out';
-        }
-        card.style.boxShadow = 'var(--card-shadow-lift)';
-        card.style.zIndex = '100';
-
-      }
-    }, LONG_PRESS_MS);
+    card.addEventListener('pointermove', onMove);
+    card.addEventListener('pointerup', onEnd);
+    card.addEventListener('pointercancel', onEnd);
   }
 
   function onMove(e) {
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const dx = clientX - startX;
-    const dy = clientY - startY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    const dx = e.clientX - startX;
+    const dy = e.clientY - startY;
 
-    if (dist > MOVEMENT_TOLERANCE && !isDragging) {
-      clearTimeout(pressTimer);
-      pressTimer = null;
-      moved = true;
-      card._suppressNextClick = true;
+    if (!isDragging) {
+      if (Math.abs(dx) < DRAG_THRESHOLD && Math.abs(dy) < DRAG_THRESHOLD) return;
+      isDragging = true;
+      canvasDragActive = true;
+      card.classList.add('grabbing');
+      card.style.boxShadow = 'var(--card-shadow-lift)';
+      card.style.zIndex = '100';
     }
 
-    if (!isDragging) return;
     e.preventDefault();
-
     const canvas = document.getElementById('scatter-canvas');
     const canvasRect = canvas.getBoundingClientRect();
-
-    let newLeft = startLeft + dx;
-    let newTop = startTop + dy;
-
     const EDGE = 24;
-    newLeft = Math.max(EDGE, Math.min(canvasRect.width - card.offsetWidth - EDGE, newLeft));
-    newTop = Math.max(EDGE, Math.min(canvasRect.height - card.offsetHeight - EDGE, newTop));
-
+    const newLeft = Math.max(EDGE, Math.min(canvasRect.width - card.offsetWidth - EDGE, startLeft + dx));
+    const newTop = Math.max(EDGE, Math.min(canvasRect.height - card.offsetHeight - EDGE, startTop + dy));
     card.style.left = newLeft + 'px';
     card.style.top = newTop + 'px';
   }
 
   function onEnd(e) {
-    clearTimeout(pressTimer);
-    pressTimer = null;
+    card.removeEventListener('pointermove', onMove);
+    card.removeEventListener('pointerup', onEnd);
+    card.removeEventListener('pointercancel', onEnd);
 
-    if (!isDragging) return;
-
-    const clientX = e.touches ? (e.changedTouches[0]?.clientX ?? startX) : e.clientX;
-    const clientY = e.touches ? (e.changedTouches[0]?.clientY ?? startY) : e.clientY;
-    const dx = clientX - startX;
-    const dy = clientY - startY;
-    const dist = Math.sqrt(dx * dx + dy * dy);
+    if (!isDragging) {
+      // Handle tapped without dragging — just suppress click
+      setTimeout(() => { card._suppressNextClick = false; }, 50);
+      return;
+    }
 
     isDragging = false;
     canvasDragActive = false;
     card.classList.remove('grabbing');
     card.style.zIndex = '';
+    card.style.boxShadow = '';
+    card.style.transition = 'box-shadow 150ms ease';
 
-    const rm = prefersReducedMotion();
+    state.cardPositions[id] = {
+      x: parseFloat(card.style.left),
+      y: parseFloat(card.style.top),
+    };
+    saveState();
 
-    card._suppressNextClick = true;
-    setTimeout(() => { card._suppressNextClick = false; }, 300);
-
-    if (dist < SNAP_THRESHOLD) {
-      const snapDur = rm ? 0 : 180;
-      card.style.transition = `left ${snapDur}ms ease-out, top ${snapDur}ms ease-out, box-shadow ${snapDur}ms ease`;
-      card.style.left = startLeft + 'px';
-      card.style.top = startTop + 'px';
-      card.style.boxShadow = '';
-      setTimeout(() => { card.style.transition = ''; }, snapDur + 10);
-    } else {
-      card.style.boxShadow = '';
-      card.style.transition = 'box-shadow 150ms ease';
-      state.cardPositions[id] = {
-        x: parseFloat(card.style.left),
-        y: parseFloat(card.style.top),
-      };
-      saveState();
-      setTimeout(() => { card.style.transition = ''; }, 160);
-    }
+    setTimeout(() => { card._suppressNextClick = false; card.style.transition = ''; }, 200);
   }
 
-  card.addEventListener('pointerdown', onStart);
-  card.addEventListener('pointermove', onMove);
-  card.addEventListener('pointerup', onEnd);
-  card.addEventListener('pointercancel', onEnd);
+  const handle = card.querySelector('.canvas-handle');
+  if (handle) {
+    handle.addEventListener('pointerdown', onHandleDown);
+  }
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3161,6 +3194,10 @@ function doCleanup() {
           card.style.top = pos.y + 'px';
         }
       });
+      // Clear stale transition after animation so drag/arrow keys aren't sluggish
+      if (!rm) {
+        setTimeout(() => { remaining.forEach(card => { card.style.transition = ''; }); }, 420);
+      }
     } else {
       state.cardPositions = {};
     }
