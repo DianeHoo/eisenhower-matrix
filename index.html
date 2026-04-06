@@ -350,7 +350,7 @@ html, body {
   cursor: pointer;
   padding: 4px 6px;
   border-radius: 4px;
-  opacity: 0;
+  opacity: 0.4;
   transition: opacity 150ms ease, color 150ms ease;
   font-family: var(--font-body);
 }
@@ -558,6 +558,20 @@ html, body {
   .sort-card { transition: none; }
 }
 
+/* Long-press charging feedback (touch drag without handle) */
+@keyframes lp-charge {
+  from { transform: scale(1); }
+  to   { transform: scale(1.02); box-shadow: 0 2px 8px rgba(46, 52, 45, 0.10); }
+}
+.sort-card.long-press-charging,
+.canvas-card.long-press-charging {
+  animation: lp-charge 400ms ease-out forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sort-card.long-press-charging,
+  .canvas-card.long-press-charging { animation: none; }
+}
+
 .sort-card .rank {
   font-family: var(--font-display);
   font-size: 11px;
@@ -579,6 +593,9 @@ html, body {
 
 .sort-card .card-text {
   flex: 1;
+  font-size: 16px;
+  transform: scale(0.8125);
+  transform-origin: left center;
 }
 
 /* ── Swipe-to-delete wrapper ── */
@@ -693,16 +710,54 @@ html, body {
   position: absolute;
   font-family: var(--font-body);
   font-size: 11px;
-  color: var(--text-muted);
+  color: var(--sage-45);
   pointer-events: none;
   letter-spacing: 0.01em;
   white-space: nowrap;
   z-index: 5;
 }
-.corner-hint.now { top: 52px; right: 32px; }
-.corner-hint.soon { top: 52px; left: 32px; }
-.corner-hint.quick { bottom: 40px; right: 32px; }
-.corner-hint.later { bottom: 40px; left: 32px; }
+.corner-hint.now { top: 52px; right: 36px; }
+.corner-hint.soon { top: 52px; left: 36px; }
+.corner-hint.quick { bottom: 40px; right: 36px; }
+.corner-hint.later { bottom: 40px; left: 36px; }
+
+/* Interaction hints — top-left, below "Soon" hint */
+.interaction-hints {
+  position: absolute;
+  top: 100px;
+  left: 32px;
+  z-index: 0;
+  pointer-events: auto;
+}
+.tips-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-45);
+  cursor: pointer;
+  line-height: 1.5;
+}
+.tips-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 80px;
+  opacity: 1;
+  overflow: hidden;
+  transition: max-height 400ms ease, opacity 300ms ease;
+}
+.interaction-hint {
+  font-family: var(--font-body);
+  font-size: 11px;
+  color: var(--sage-45);
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.interaction-hints.collapsed .tips-content { max-height: 0; opacity: 0; }
+.interaction-hints.collapsed:hover .tips-content,
+.interaction-hints.collapsed:focus-within .tips-content { max-height: 80px; opacity: 1; }
 
 /* Axis labels — away from corners */
 .axis-label {
@@ -860,6 +915,11 @@ html, body {
 .canvas-card:not(.done) .card-text {
   opacity: 1;
   transition: opacity 300ms ease;
+}
+.card-text[contenteditable="true"] {
+  font-size: 16px;
+  transform: scale(0.8125);
+  transform-origin: left top;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1062,9 +1122,11 @@ html, body {
   font-size: 18px;
   transition: box-shadow 150ms, color 150ms;
 }
-.toolbar-btn:hover {
-  color: var(--sage);
-  box-shadow: 0 4px 12px rgba(46,52,45,0.18);
+@media (hover: hover) {
+  .toolbar-btn:hover {
+    color: var(--sage);
+    box-shadow: 0 4px 12px rgba(46,52,45,0.18);
+  }
 }
 .toolbar-btn:focus-visible {
   outline: 2px solid var(--sage);
@@ -1280,7 +1342,7 @@ button:focus-visible {
 /* ── Mobile: touch devices ── */
 @media (pointer: coarse) {
   .dump-card .dump-delete {
-    opacity: 0.35;
+    opacity: 0.5;
   }
   .dump-card .dump-delete:active {
     opacity: 1;
@@ -1298,6 +1360,7 @@ button:focus-visible {
   .corner-label.soon { top: 20px; left: 20px; }
   .corner-label.quick { bottom: 44px; right: 20px; }
   .corner-label.later { bottom: 44px; left: 20px; }
+  .interaction-hints { top: 58px; left: 20px; }
   .dump-card .dump-delete { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
   .sort-card .handle { padding: 15px; margin: -15px; }
   .phase-nav-btn { padding: 14px 24px; }
@@ -1331,6 +1394,9 @@ button:focus-visible {
   .corner-label.now, .corner-label.quick { right: 8px; }
   .corner-label.soon, .corner-label.later { left: 8px; }
   .corner-hint { display: none; }
+  .interaction-hints { top: 56px; left: 22px; }
+  .interaction-hint { font-size: 12px; }
+  .tips-toggle { font-size: 12px; }
   .axis-label { font-size: 9px; }
   .axis-urgent { right: 8px; top: calc(50% + 6px); }
   .axis-important { top: 6px; }
@@ -1474,6 +1540,15 @@ What matters most to you goes at the top.</h2>
       <span class="corner-hint quick" aria-hidden="true">do fast, don't overthink</span>
       <span class="corner-hint later" aria-hidden="true">reconsider or let go</span>
 
+      <div class="interaction-hints" id="interaction-hints" aria-hidden="true">
+        <button class="tips-toggle" id="tips-toggle">tips</button>
+        <div class="tips-content">
+          <span class="interaction-hint">tap to complete</span>
+          <span class="interaction-hint">double-tap to edit</span>
+          <span class="interaction-hint">drag ⠇ to reorder</span>
+        </div>
+      </div>
+
       <span class="axis-label axis-urgent" aria-hidden="true">urgent &#8594;</span>
       <span class="axis-label axis-important" aria-hidden="true">important &#8593;</span>
 
@@ -1488,7 +1563,7 @@ Start by adding what's on your mind.</p>
           <input type="text" class="canvas-add-input" id="canvas-add-input" placeholder="add a task" aria-label="Add a new task to the map" autocomplete="off">
         </div>
         <div class="toolbar-item">
-          <button class="toolbar-btn toolbar-btn-add" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="10" y1="16" x2="10" y2="4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><polyline points="5,9 10,4 15,9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
+          <button class="toolbar-btn toolbar-btn-add" id="btn-back-to-top" aria-label="Back to the top" title="Back to the top"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><line x1="5" y1="3" x2="15" y2="3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><line x1="10" y1="16" x2="10" y2="7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><polyline points="5,12 10,7 15,12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg></button>
           <span class="toolbar-label">back to top</span>
         </div>
         <div class="toolbar-item">
@@ -1757,6 +1832,12 @@ function deleteDumpTask(id) {
   // Toggle has-value on input wrap — hides typewriter when tasks exist
   const inputWrap = document.querySelector('.dump-input-wrap');
   if (inputWrap) inputWrap.classList.toggle('has-value', state.tasks.length > 0);
+  // Remove from old/hidden tracking; hide toggle line when no old tasks remain
+  oldTaskIds.delete(id);
+  hiddenTaskIds.delete(id);
+  if (oldTaskIds.size === 0) {
+    document.getElementById('existing-tasks-line').style.display = 'none';
+  }
   // Re-show suggest button and restart typewriter when all tasks deleted
   if (state.tasks.length === 0) {
     const suggestBtn = document.getElementById('btn-suggest-tasks');
@@ -1897,6 +1978,55 @@ function transitionToSortUrgency() {
 let dragState = null;
 let canvasDragActive = false;
 
+function enterSortCardEdit(card, pass) {
+  if (card.querySelector('.sort-edit-input')) return;
+  const textEl = card.querySelector('.card-text');
+  if (textEl.getAttribute('contenteditable') === 'true') return;
+  const originalText = textEl.textContent;
+  const taskId = card.dataset.id;
+
+  textEl.setAttribute('contenteditable', 'true');
+  textEl.style.outline = 'none';
+  textEl.focus();
+
+  // Place cursor at end
+  const range = document.createRange();
+  range.selectNodeContents(textEl);
+  range.collapse(false);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+
+  function save() {
+    textEl.setAttribute('contenteditable', 'false');
+    const plainText = textEl.textContent.trim() || originalText;
+    if (plainText !== originalText) {
+      const t = state.tasks.find(t => t.id === taskId);
+      if (t) t.text = plainText;
+      saveState();
+    }
+    textEl.textContent = plainText || originalText;
+    resetIOSZoom();
+    const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
+    const pos = order.indexOf(taskId);
+    card.setAttribute('aria-label', `${plainText}, position ${pos + 1} of ${order.length}`);
+  }
+
+  function cancel() {
+    textEl.setAttribute('contenteditable', 'false');
+    textEl.textContent = originalText;
+    resetIOSZoom();
+  }
+
+  textEl.addEventListener('keydown', function handler(ev) {
+    if (ev.key === 'Enter' && !ev.shiftKey) { ev.preventDefault(); save(); textEl.removeEventListener('keydown', handler); }
+    if (ev.key === 'Escape') { ev.preventDefault(); cancel(); textEl.removeEventListener('keydown', handler); }
+    ev.stopPropagation();
+  });
+
+  textEl.addEventListener('blur', save, { once: true });
+}
+
 function renderSortList(pass) {
   const listId = pass === 'urgency' ? 'sort-list-urgency' : 'sort-list-importance';
   const listEl = document.getElementById(listId);
@@ -1924,86 +2054,30 @@ function renderSortList(pass) {
       <span class="handle" aria-hidden="true">\u2807</span>
     `;
 
-    // ── Double-click to edit ──
-    card.addEventListener('dblclick', (e) => {
-      e.stopPropagation();
-      if (card.querySelector('.sort-edit-input')) return; // guard against native+synthetic dblclick double-fire
-      const textEl = card.querySelector('.card-text');
-      const originalText = textEl.textContent;
-      const taskId = card.dataset.id;
-
-      // Create input
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.value = originalText;
-      input.className = 'sort-edit-input';
-      input.style.cssText = 'width:100%;border:none;background:transparent;font:inherit;color:inherit;outline:none;padding:0;';
-
-      textEl.textContent = '';
-      textEl.appendChild(input);
-      input.focus();
-      resetIOSZoom();
-      // Place cursor at end instead of selecting all
-      input.setSelectionRange(input.value.length, input.value.length);
-
-      function save() {
-        // Guard against double-fire (blur after Enter)
-        if (!input.parentNode) return;
-        const newText = input.value.trim();
-        if (newText && newText !== originalText) {
-          // Update state
-          const t = state.tasks.find(t => t.id === taskId);
-          if (t) t.text = newText;
-          saveState();
-        }
-        const finalText = newText || originalText;
-        textEl.textContent = finalText;
-        input.remove();
-        resetIOSZoom();
-        // Update aria-label
-        const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
-        const pos = order.indexOf(taskId);
-        card.setAttribute('aria-label', `${finalText}, position ${pos + 1} of ${order.length}`);
-      }
-
-      function cancel() {
-        textEl.textContent = originalText;
-        input.remove();
-        resetIOSZoom();
-      }
-
-      input.addEventListener('keydown', (ev) => {
-        if (ev.key === 'Enter') { ev.preventDefault(); save(); }
-        if (ev.key === 'Escape') { ev.preventDefault(); cancel(); }
-        ev.stopPropagation(); // prevent sort keyboard handlers
-      });
-
-      input.addEventListener('blur', save);
-    });
-
-    // Double-tap fallback for mobile
-    let lastTapTime = 0;
-    card.addEventListener('pointerup', (e) => {
-      if (card._suppressNextClick) return;
+    // ── Click to edit ──
+    card.addEventListener('click', (e) => {
       if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
-      const now = Date.now();
-      if (now - lastTapTime < 300) {
-        card.dispatchEvent(new Event('dblclick', { bubbles: true }));
-        lastTapTime = 0;
-      } else {
-        lastTapTime = now;
-      }
+      if (card._suppressNextClick) { card._suppressNextClick = false; return; }
+      enterSortCardEdit(card, pass);
     });
 
     // ── Drag to reorder ──
-    // On touch: only the handle initiates drag (so card body scrolls the page)
-    // On mouse: anywhere on the card initiates drag
+    // Mouse: anywhere on card initiates drag
+    // Touch handle: instant drag  |  Touch card body: long-press to drag
     card.addEventListener('pointerdown', (e) => {
-      if (card.querySelector('.sort-edit-input')) return;
-      if (e.button !== 0 && e.pointerType !== 'touch') return;
+      if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
       if (e.pointerType === 'touch' && !e.target.closest('.handle')) return;
+      if (e.button !== 0 && e.pointerType !== 'touch') return;
       onSortPointerDown(e, pass);
     });
+
+    // Long-press entry via touchstart (immune to browser's pointercancel)
+    card.addEventListener('touchstart', (e) => {
+      if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
+      if (e.target.closest('.handle')) return;
+      const t = e.touches[0];
+      if (t) startSortLongPress(t, card, pass);
+    }, { passive: true });
 
     card.addEventListener('keydown', e => onSortKeyDown(e, id, pass));
 
@@ -2014,6 +2088,80 @@ function renderSortList(pass) {
 
 let pendingDrag = null;
 const DRAG_MOVE_THRESHOLD = 4; // px before committing to drag
+
+// ── Long-press to drag (touch, card body) ──
+// Uses touch events (not pointer events) because the browser fires pointercancel
+// on elements with touch-action:manipulation before our timer can complete.
+const LONG_PRESS_DELAY = 400;
+const LONG_PRESS_TOLERANCE = 5;
+let sortLongPressCancel = null;
+
+function startSortLongPress(e, card, pass) {
+  if (sortLongPressCancel) sortLongPressCancel();
+
+  const startX = e.clientX;
+  const startY = e.clientY;
+  let timer = null;
+
+  const onMoveDuringWait = (ev) => {
+    const t = ev.touches[0];
+    if (!t) return;
+    if (Math.abs(t.clientX - startX) > LONG_PRESS_TOLERANCE ||
+        Math.abs(t.clientY - startY) > LONG_PRESS_TOLERANCE) {
+      cancel();
+    }
+  };
+
+  const cancel = () => {
+    if (timer) clearTimeout(timer);
+    timer = null;
+    sortLongPressCancel = null;
+    card.classList.remove('long-press-charging');
+    document.removeEventListener('touchmove', onMoveDuringWait);
+    document.removeEventListener('touchend', cancel);
+    document.removeEventListener('touchcancel', cancel);
+  };
+
+  sortLongPressCancel = cancel;
+
+  document.addEventListener('touchmove', onMoveDuringWait, { passive: true });
+  document.addEventListener('touchend', cancel, { passive: true });
+  document.addEventListener('touchcancel', cancel, { passive: true });
+
+  card.classList.add('long-press-charging');
+
+  timer = setTimeout(() => {
+    cancel();
+    if (navigator.vibrate) navigator.vibrate(30);
+
+    // Start drag immediately (skip the 4px pending threshold)
+    const cardRect = card.getBoundingClientRect();
+    pendingDrag = {
+      card, pass, startY,
+      cardOffsetY: startY - cardRect.top,
+      pointerId: null,
+      committed: true,
+    };
+    commitDragStart(pendingDrag, null);
+
+    // Track drag via touch events (pointer events are dead after browser's pointercancel)
+    function onDragMove(ev) {
+      ev.preventDefault(); // block scroll
+      const t = ev.touches[0];
+      if (t) onSortPointerMove({ clientY: t.clientY });
+    }
+    function onDragEnd() {
+      document.removeEventListener('touchmove', onDragMove);
+      document.removeEventListener('touchend', onDragEnd);
+      document.removeEventListener('touchcancel', onDragEnd);
+      onSortPointerUp({});
+    }
+
+    document.addEventListener('touchmove', onDragMove, { passive: false });
+    document.addEventListener('touchend', onDragEnd, { passive: true });
+    document.addEventListener('touchcancel', onDragEnd, { passive: true });
+  }, LONG_PRESS_DELAY);
+}
 
 function onSortPointerDown(e, pass) {
   const card = e.currentTarget;
@@ -2234,7 +2382,7 @@ function onSortPointerUp(e) {
 
 function onSortKeyDown(e, id, pass) {
   // Don't handle keys during inline editing
-  if (e.target.classList.contains('sort-edit-input')) return;
+  if (e.target.getAttribute('contenteditable') === 'true' || e.target.classList.contains('sort-edit-input')) return;
 
   const order = pass === 'urgency' ? state.urgencyOrder : state.importanceOrder;
   const idx = order.indexOf(id);
@@ -2487,7 +2635,6 @@ function buildCanvasCards(rm) {
       textEl.setAttribute('contenteditable', 'true');
       textEl.style.outline = 'none';
       textEl.focus();
-      resetIOSZoom();
       scrollCardIntoKeyboardView(card);
 
       // Place cursor at end
@@ -2506,6 +2653,8 @@ function buildCanvasCards(rm) {
 
       function save() {
         textEl.setAttribute('contenteditable', 'false');
+        card._suppressNextClick = true;
+        setTimeout(() => { card._suppressNextClick = false; }, 400);
         const html = textEl.innerHTML;
         const plainText = textEl.textContent.trim() || originalText;
         if (plainText !== originalText) {
@@ -2522,6 +2671,8 @@ function buildCanvasCards(rm) {
 
       function cancel() {
         textEl.setAttribute('contenteditable', 'false');
+        card._suppressNextClick = true;
+        setTimeout(() => { card._suppressNextClick = false; }, 400);
         textEl.textContent = originalText;
         endEdit();
       }
@@ -2539,6 +2690,7 @@ function buildCanvasCards(rm) {
     let lastTapTime = 0;
     card.addEventListener('pointerup', (e) => {
       if (card._suppressNextClick) return;
+      if (card._isEditing) return;
       if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
       const now = Date.now();
       if (now - lastTapTime < 300) {
@@ -2691,13 +2843,8 @@ function restoreCardPosition(card, taskId) {
 }
 
 function resetIOSZoom() {
-  const vp = document.querySelector('meta[name=viewport]');
-  if (vp) {
-    vp.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0');
-    setTimeout(() => {
-      vp.setAttribute('content', 'width=device-width, initial-scale=1.0');
-    }, 100);
-  }
+  // Viewport meta tag manipulation no longer works on iOS 10+.
+  // Auto-zoom is prevented by using font-size >= 16px on editable elements.
 }
 
 function onCanvasCardTap(card, id) {
@@ -2726,6 +2873,7 @@ function onCanvasCardTap(card, id) {
     announce(`${text} — done`);
   }
   saveState();
+  collapseInteractionHints();
 }
 
 // Swipe-to-strike removed — tap toggles strikethrough, hold to drag, double-tap to edit
@@ -2838,7 +2986,7 @@ function initCanvasAdd() {
 
   document.addEventListener('click', (e) => {
     if (addWrap.classList.contains('visible') &&
-        !addWrap.contains(e.target) && e.target !== addBtn) {
+        !addWrap.contains(e.target) && !addBtn.contains(e.target)) {
       addWrap.classList.remove('visible');
     }
   });
@@ -2915,7 +3063,6 @@ function addTaskToCanvas(text) {
     textEl.setAttribute('contenteditable', 'true');
     textEl.style.outline = 'none';
     textEl.focus();
-    resetIOSZoom();
     scrollCardIntoKeyboardView(card);
 
     const range = document.createRange();
@@ -2933,6 +3080,8 @@ function addTaskToCanvas(text) {
 
     function save() {
       textEl.setAttribute('contenteditable', 'false');
+      card._suppressNextClick = true;
+      setTimeout(() => { card._suppressNextClick = false; }, 400);
       const html = textEl.innerHTML;
       const plainText = textEl.textContent.trim() || originalText;
       if (plainText !== originalText) {
@@ -2949,6 +3098,8 @@ function addTaskToCanvas(text) {
 
     function cancel() {
       textEl.setAttribute('contenteditable', 'false');
+      card._suppressNextClick = true;
+      setTimeout(() => { card._suppressNextClick = false; }, 400);
       textEl.textContent = originalText;
       endEdit();
     }
@@ -2965,7 +3116,8 @@ function addTaskToCanvas(text) {
   // Double-tap fallback for mobile
   let lastTapTime = 0;
   card.addEventListener('pointerup', (e) => {
-    if (card._suppressNextClick) return; // guard against false dblclick after drag
+    if (card._suppressNextClick) return;
+    if (card._isEditing) return;
     if (card.querySelector('[contenteditable="true"]') || card.querySelector('.sort-edit-input')) return;
     const now = Date.now();
     if (now - lastTapTime < 300) {
@@ -3034,10 +3186,11 @@ function setupLongPressDrag(card, id) {
 
   const DRAG_THRESHOLD = 4;
 
+  // ── Handle drag (pointer events — handle has touch-action:none so no cancel) ──
   function onHandleDown(e) {
     if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault(); // prevent text selection
-    e.stopPropagation(); // don't trigger card's pointerdown
+    e.preventDefault();
+    e.stopPropagation();
 
     startX = e.clientX;
     startY = e.clientY;
@@ -3048,12 +3201,12 @@ function setupLongPressDrag(card, id) {
     card.setPointerCapture(e.pointerId);
     card._suppressNextClick = true;
 
-    card.addEventListener('pointermove', onMove);
-    card.addEventListener('pointerup', onEnd);
-    card.addEventListener('pointercancel', onEnd);
+    card.addEventListener('pointermove', onPointerMove);
+    card.addEventListener('pointerup', onPointerEnd);
+    card.addEventListener('pointercancel', onPointerEnd);
   }
 
-  function onMove(e) {
+  function onPointerMove(e) {
     const dx = e.clientX - startX;
     const dy = e.clientY - startY;
 
@@ -3067,6 +3220,18 @@ function setupLongPressDrag(card, id) {
     }
 
     e.preventDefault();
+    moveCard(dx, dy);
+  }
+
+  function onPointerEnd(e) {
+    card.removeEventListener('pointermove', onPointerMove);
+    card.removeEventListener('pointerup', onPointerEnd);
+    card.removeEventListener('pointercancel', onPointerEnd);
+    finishDrag();
+  }
+
+  // ── Shared: move card within canvas bounds ──
+  function moveCard(dx, dy) {
     const canvas = document.getElementById('scatter-canvas');
     const canvasRect = canvas.getBoundingClientRect();
     const EDGE = 24;
@@ -3076,13 +3241,8 @@ function setupLongPressDrag(card, id) {
     card.style.top = newTop + 'px';
   }
 
-  function onEnd(e) {
-    card.removeEventListener('pointermove', onMove);
-    card.removeEventListener('pointerup', onEnd);
-    card.removeEventListener('pointercancel', onEnd);
-
+  function finishDrag() {
     if (!isDragging) {
-      // Handle tapped without dragging — just suppress click
       setTimeout(() => { card._suppressNextClick = false; }, 50);
       return;
     }
@@ -3099,6 +3259,7 @@ function setupLongPressDrag(card, id) {
       y: parseFloat(card.style.top),
     };
     saveState();
+    collapseInteractionHints();
 
     setTimeout(() => { card._suppressNextClick = false; card.style.transition = ''; }, 200);
   }
@@ -3107,6 +3268,74 @@ function setupLongPressDrag(card, id) {
   if (handle) {
     handle.addEventListener('pointerdown', onHandleDown);
   }
+
+  // ── Long-press on card body (touch events — immune to pointercancel) ──
+  let lpTimer = null;
+  card.addEventListener('touchstart', (e) => {
+    if (e.target.closest('.canvas-handle')) return;
+
+    const t = e.touches[0];
+    if (!t) return;
+    const sx = t.clientX;
+    const sy = t.clientY;
+
+    const onMoveLp = (ev) => {
+      const mt = ev.touches[0];
+      if (!mt) return;
+      if (Math.abs(mt.clientX - sx) > LONG_PRESS_TOLERANCE ||
+          Math.abs(mt.clientY - sy) > LONG_PRESS_TOLERANCE) {
+        cancelLp();
+      }
+    };
+    const cancelLp = () => {
+      if (lpTimer) clearTimeout(lpTimer);
+      lpTimer = null;
+      card.classList.remove('long-press-charging');
+      document.removeEventListener('touchmove', onMoveLp);
+      document.removeEventListener('touchend', cancelLp);
+      document.removeEventListener('touchcancel', cancelLp);
+    };
+
+    document.addEventListener('touchmove', onMoveLp, { passive: true });
+    document.addEventListener('touchend', cancelLp, { passive: true });
+    document.addEventListener('touchcancel', cancelLp, { passive: true });
+
+    card.classList.add('long-press-charging');
+
+    lpTimer = setTimeout(() => {
+      cancelLp();
+      if (navigator.vibrate) navigator.vibrate(30);
+
+      // Set up drag state
+      startX = sx;
+      startY = sy;
+      startLeft = parseFloat(card.style.left) || 0;
+      startTop = parseFloat(card.style.top) || 0;
+      isDragging = true;
+      canvasDragActive = true;
+      card._suppressNextClick = true;
+      card.classList.add('grabbing');
+      card.style.boxShadow = 'var(--card-shadow-lift)';
+      card.style.zIndex = '100';
+
+      // Track drag via touch events
+      function onDragMove(ev) {
+        ev.preventDefault(); // block scroll
+        const dt = ev.touches[0];
+        if (dt) moveCard(dt.clientX - startX, dt.clientY - startY);
+      }
+      function onDragEnd() {
+        document.removeEventListener('touchmove', onDragMove);
+        document.removeEventListener('touchend', onDragEnd);
+        document.removeEventListener('touchcancel', onDragEnd);
+        finishDrag();
+      }
+
+      document.addEventListener('touchmove', onDragMove, { passive: false });
+      document.addEventListener('touchend', onDragEnd, { passive: true });
+      document.addEventListener('touchcancel', onDragEnd, { passive: true });
+    }, LONG_PRESS_DELAY);
+  }, { passive: true });
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
@@ -3437,6 +3666,31 @@ function initCornerPopovers() {
   // Click outside dismisses all popovers
   document.addEventListener('click', () => {
     popovers.forEach(p => p.classList.remove('open'));
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Interaction hints — collapsible tips toggle
+// ──────────────────────────────────────────────────────────────────────────────
+
+function collapseInteractionHints() {
+  const hints = document.getElementById('interaction-hints');
+  if (!hints || hints.classList.contains('collapsed')) return;
+  hints.classList.add('collapsed');
+}
+
+function initInteractionHints() {
+  // On touch devices, tap "tips" to briefly show hints
+  const hints = document.getElementById('interaction-hints');
+  if (!hints) return;
+  const toggle = document.getElementById('tips-toggle');
+  if (!toggle) return;
+  toggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (!hints.classList.contains('collapsed')) return;
+    hints.classList.remove('collapsed');
+    // Re-collapse after finger lifts and a short reading window
+    setTimeout(() => hints.classList.add('collapsed'), 3000);
   });
 }
 
@@ -3924,6 +4178,7 @@ function init() {
   initDump();
   initSortTips();
   initMapGuide();
+  initInteractionHints();
   initCornerPopovers();
   initPageScroll();
 
