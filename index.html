@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Priority Grid</title>
+<title>To-Do Map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -1408,7 +1408,7 @@ button:focus-visible {
 </head>
 <body>
 
-<h1 class="sr-only">Your priority grid</h1>
+<h1 class="sr-only">Your to-do map</h1>
 <div id="aria-live" aria-live="polite" aria-atomic="true"></div>
 
 <div class="flow-container">
@@ -1419,7 +1419,7 @@ button:focus-visible {
   <section id="phase-dump" class="phase phase-active" aria-label="Brain dump — add everything on your mind">
     <div class="dump-inner" id="dump-inner">
       <div class="dump-upper">
-        <h2 class="dump-title">Priority Grid</h2>
+        <h2 class="dump-title">To-Do Map</h2>
         <p class="dump-tagline">Sort your tasks. Clear your mind.</p>
       </div>
 
@@ -1511,7 +1511,7 @@ What matters most to you goes at the top.</h2>
   <!-- ═══════════════════════════════════════
        PHASE 3: SCATTER
   ═══════════════════════════════════════ -->
-  <section id="phase-scatter" class="phase phase-pending" aria-label="Your tasks on the grid" aria-hidden="true">
+  <section id="phase-scatter" class="phase phase-pending" aria-label="Your tasks on the map" aria-hidden="true">
     <h2 class="sr-only">Your grid</h2>
     <div class="scatter-canvas" id="scatter-canvas">
       <svg class="quadrant-svg" id="quadrant-svg" aria-hidden="true">
@@ -1578,9 +1578,9 @@ Start by adding what's on your mind.</p>
 
       <!-- Utility buttons — bottom left -->
       <div class="canvas-util-wrap" id="canvas-util-wrap">
-        <button class="canvas-util-btn" id="btn-export" aria-label="Export your grid as a file">export</button>
+        <button class="canvas-util-btn" id="btn-export" aria-label="Export your map as a file">export</button>
         <span class="canvas-util-sep" aria-hidden="true">·</span>
-        <button class="canvas-util-btn" id="btn-import" aria-label="Import a previously exported grid file">import</button>
+        <button class="canvas-util-btn" id="btn-import" aria-label="Import a previously exported map file">import</button>
         <input type="file" id="import-file-input" accept=".json" style="display:none" aria-hidden="true">
       </div>
     </div>
@@ -3487,7 +3487,7 @@ function exportGrid() {
   a.href = url;
   const d = new Date();
   const stamp = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-  a.download = `priority-grid-${stamp}.json`;
+  a.download = `to-do-map-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
   announce('Grid exported.');
